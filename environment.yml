@@ -1,4 +1,4 @@
-name: bheeshmenv
+name: NoPrompt-UAD
 channels:
   - nvidia/label/testing
   - conda-forge
