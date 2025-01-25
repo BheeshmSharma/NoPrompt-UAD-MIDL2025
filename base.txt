@@ -1,0 +1,11 @@
+--batch_size 16
+--learning_rate 1e-5
+--num_epochs 100
+--device 'cuda:0'
+--fold "[0,5]"
+--early_stop False
+--dataset_name 'brain-302'
+--test_dataset ""
+--seed True
+--folder_name ''
+--pre_training False
