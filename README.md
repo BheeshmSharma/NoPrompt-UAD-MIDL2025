@@ -1,6 +1,6 @@
 # NoPrompt-UAD: An Approach for Prompt-less Unsupervised Anomaly Detection in Brain MRI Scans
 
-This repository contains the code implementation for the paper "[NoPrompt-UAD: An Approach for Prompt-less Unsupervised Anomaly Detection in Brain MRI Scans](https://www.researchgate.net/profile/Bheeshm-Sharma/)" by Bheeshm Sharma, Karthikeyan Jaganathan and P. Balamurugan, accepted by CSIP-BMEI 2024.
+This repository contains the code implementation for the paper "[NoPrompt-UAD: An Approach for Prompt-less Unsupervised Anomaly Detection in Brain MRI Scans](https://www.researchgate.net/profile/Bheeshm-Sharma/)" by Bheeshm Sharma, Karthikeyan Jaganathan and P. Balamurugan.
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -25,13 +25,10 @@ To set up the environment, use the following installation instructions.
 1. Clone the repository:
     ```bash
     git clone https://github.com/bheeshmsharma/NoPrompt-UAD.git
-    ```
-2. Update Environment Configuration:
-    - After cloning, update the path in the `pc_environment.env` file located in the repository to match your local setup.
     
 3. Navigate to the project directory:
     ```bash
-    cd MCDDPM
+    cd NoPrompt-UAD
     ```
 4. Create and activate the Conda environment:
     ```bash
@@ -41,14 +38,17 @@ To set up the environment, use the following installation instructions.
 
 ## DataSets
 This project utilizes the following datasets:
-- **IXI**: [Information eXtraction from Images 2020 dataset](https://brain-development.org/ixi-dataset/).  
-  - **Download Working Link**: [IXI Dataset](https://www.nitrc.org/ir/app/action/ProjectDownloadAction/project/ixi)
-
 - **BraTS20**: [Brain Tumor Segmentation Challenge 2020 dataset](https://www.med.upenn.edu/cbica/brats2020/data.html).  
   - **Download Working Link**: [BraTS20 Dataset on Kaggle](https://www.kaggle.com/datasets/awsaf49/brats20-dataset-training-validation?resource=download-directory)
 
 - **BraTS21**: [Brain Tumor Segmentation Challenge 2021 dataset](http://braintumorsegmentation.org/).  
   - **Download Working Link**: [BraTS21 Dataset on Kaggle](https://www.kaggle.com/datasets/dschettler8845/brats-2021-task1/data)
+
+- **BraTS23**: [Brain Tumor Segmentation Challenge 2023 dataset](https://www.synapse.org/Synapse:syn51156910/wiki/621282).  
+  - **Download Working Link**: [BraTS23 Dataset on Kaggle](https://www.kaggle.com/datasets/shakilrana/brats-2023-adult-glioma)
+
+- **MSD**: [Medical Segmentation Decathlon dataset](http://medicaldecathlon.com/).  
+  - **Download Working Link**: [MSD Dataset on google drive]([https://www.kaggle.com/datasets/shakilrana/brats-2023-adult-glioma](https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2))
 
 - **MSLUB**: [The Multiple Sclerosis Dataset from The University Hospital of Ljubljana](https://lit.fe.uni-lj.si/en/research/resources/3D-MR-MS/).
   - **Download from the above link**
@@ -56,35 +56,40 @@ This project utilizes the following datasets:
 ## Data Preprocessing
 
 Before you begin processing, ensure that the downloaded ZIP files are extracted and arranged into the following directory structure:
+   
+    DATA
+    ├── 
+    │   ├── BraTS20 
+    │   │   ├── Frames
+    │   │   ├── GT Mask
+    │   │   └── train_file_names
+    │   │   └── val_file_names
+    │   │   └── test_file_names
+    │  
+    │   ├── BraTS21 
+    │   │   ├── Frames
+    │   │   ├── GT Mask
+    │   │   └── train_file_names
+    │   │   └── val_file_names
+    │   │   └── test_file_names
+    │  
+    │   ├── BraTS23 
+    │   │   ├── Frames
+    │   │   ├── GT Mask
+    │   │   └── train_file_names
+    │   │   └── val_file_names
+    │   │   └── test_file_names
+    │  
+    │   ├── MSD 
+    │   │   ├── Frames
+    │   │   ├── GT Mask
+    │   │   └── train_file_names
+    │   │   └── val_file_names
+    │   │   └── test_file_names
+    ├──
 
-    ├── IXI
-    │   ├── t2 
-    │   │   ├── IXI1.nii.gz
-    │   │   ├── IXI2.nii.gz
-    │   │   └── ... 
-    │   └── ...
-    ├── MSLUB
-    │   ├── t2 
-    │   │   ├── MSLUB1.nii.gz
-    │   │   ├── MSLUB2.nii.gz
-    │   │   └── ...
-    │   ├── seg
-    │   │   ├── MSLUB1_seg.nii.gz
-    │   │   ├── MSLUB2_seg.nii.gz
-    │   │   └── ...
-    │   └── ...
-    ├── Brats21
-    │   ├── t2 
-    │   │   ├── Brats1.nii.gz
-    │   │   ├── Brats2.nii.gz
-    │   │   └── ...
-    │   ├── seg
-    │   │   ├── Brats1_seg.nii.gz
-    │   │   ├── Brats2_seg.nii.gz
-    │   │   └── ...
-    │   └── ...
-    └── ...
 
+<!--
 The following preprocessing steps are performed on the datasets:
 Please note that only the T2 modality has been utilized for our task.
 
@@ -147,21 +152,9 @@ For more details on each dataset preprocessing, refer to the respective dataset 
     ```bash
     python run.py experiment=/experiment/CISP_BMEI_MCDDPM/MCDDPM_without_Condition
     ```
-## Results
-<!--The MCDDPM model has demonstrated the following results on the evaluated datasets:
-- **IXI**:
-- **BraTS20**: 
-- **BraTS21**: 
-- **MSLUB**:
--->
 ### Qualitative results:
 We present below a few comparisons in terms of qualitative and quantitative results.
 <img alt="image" src="images/Qualitative_Results.png" style="width: 100%;" height=500>
-<!--
-<img alt="image" src="images/Qualitative_Results.png" style="width: 100%;" height=500>
-<img src="images/your-image.png" alt="My Figure" width="500"/>
-![Qualitative_Results](images/Qualitative_Results.png)
--->
 
 ### Quantitative results:
 ![image](images/Quantitative_Results.png)
@@ -169,12 +162,5 @@ We present below a few comparisons in terms of qualitative and quantitative resu
 ## Citation
 If you use this code in your research, please cite our paper:
 
-<!--## License
-This project is licensed under the MIT License.
--->
-## Acknowledgements
-We thank Technocraft Centre for Applied Artificial Intelligence (TCA2I), IIT Bombay, for their generous funding support towards this
-project.
-
 This project draws inspiration and is developed based on the [pddpm-uad](https://github.com/FinnBehrendt/patched-Diffusion-Models-UAD) repository.
-
+-->
