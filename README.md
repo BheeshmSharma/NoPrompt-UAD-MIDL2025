@@ -14,9 +14,9 @@ This repository contains the code implementation for the paper "[NoPrompt-UAD: A
 
 ## Introduction
 Unsupervised anomaly detection (UAD) in brain MRI scans is an important challenge useful to obtain quick and accurate detection of brain anomalies, when precise pixel level anomaly annotations are unavailable. Existing UAD methods including diffusion models like DDPM and its variants pDDPM, mDDPM, cDDPM, MCDDPM often suffer from prolonged training times. Prompt-based approaches like MedSAM can be used for UAD for inference with user-driven prompts, however such models are trained on massive datasets with supervision. Further most of these models are memory-heavy. In this work, we introduce NoPrompt-UAD, a novel UAD approach which eliminates the need for any user-driven prompts and pixel-level anomaly annotations. Our approach starts with a set of fixed candidate location prompts which are then enriched using an attention mechanism guided by image features to result in region-aware spatial point embeddings. These embeddings are then used in an anomaly mask decoder along with the image embeddings to obtain pixel level anomaly annotations.
-
+<!--
 <img src="images/MCDDPM.png" style="width: 100%;"  height=600 alt="MCDDPM Overview"> 
-
+ -->
 
 ## Environment Set-up
 To set up the environment, use the following installation instructions.
@@ -24,7 +24,7 @@ To set up the environment, use the following installation instructions.
 ### Installation
 1. Clone the repository:
     ```bash
-    git clone https://github.com/vivekkumartri/MCDDPM.git
+    git clone https://github.com/bheeshmsharma/NoPrompt-UAD.git
     ```
 2. Update Environment Configuration:
     - After cloning, update the path in the `pc_environment.env` file located in the repository to match your local setup.
@@ -35,8 +35,8 @@ To set up the environment, use the following installation instructions.
     ```
 4. Create and activate the Conda environment:
     ```bash
-    conda env create -f environment_mcddpm.yml
-    conda activate mcddpm
+    conda env create -f environment.yml
+    conda activate NoPrompt-UAD
     ```
 
 ## DataSets
