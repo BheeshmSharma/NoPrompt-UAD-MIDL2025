@@ -6,10 +6,10 @@ This repository contains the code implementation for the paper "[NoPrompt-UAD: A
 - [Abstract](#Abstract)
 - [Environment Set-up](#environment-set-up)
 - [DataSets](#datasets)
-- [Data-Preprocessing](#data-preprocessing)
-- 
+- [Running NoPrompt-UAD](#Running-NoPrompt-UAD)
+  
 ## Abstract
-Unsupervised anomaly detection (UAD) in brain MRI scans is an important challenge useful to obtain quick and accurate detection of brain anomalies, when precise pixel level anomaly annotations are unavailable. Existing UAD methods including diffusion models like DDPM and its variants pDDPM, mDDPM, cDDPM, MCDDPM often suffer from prolonged training times. Prompt-based approaches like MedSAM can be used for UAD for inference with user-driven prompts, however such models are trained on massive datasets with supervision. Further most of these models are memory-heavy. In this work, we introduce NoPrompt-UAD, a novel UAD approach which eliminates the need for any user-driven prompts and pixel-level anomaly annotations. Our approach starts with a set of fixed candidate location prompts which are then enriched using an attention mechanism guided by image features to result in region-aware spatial point embeddings. These embeddings are then used in an anomaly mask decoder along with the image embeddings to obtain pixel level anomaly annotations.
+Unsupervised anomaly detection (UAD) in brain MRI scans is an important challenge useful to obtain quick and accurate detection of brain anomalies when precise pixel-level anomaly annotations are unavailable. Existing UAD methods including diffusion models like DDPM and its variants pDDPM, mDDPM, cDDPM, and MCDDPM often suffer from prolonged training times. Prompt-based approaches like MedSAM can be used for UAD for inference with user-driven prompts, however, such models are trained on massive datasets with supervision. Further, most of these models are memory-heavy. In this work, we introduce NoPrompt-UAD, a novel UAD approach which eliminates the need for any user-driven prompts and pixel-level anomaly annotations. Our approach starts with a set of fixed candidate location prompts which are then enriched using an attention mechanism guided by image features to result in region-aware spatial point embeddings. These embeddings are then used in an anomaly mask decoder along with the image embeddings to obtain pixel-level anomaly annotations.
 
 ![NoPrompt-UAD Overview](/Figures/NoPrompt_UAD.jpg)
  
@@ -49,7 +49,7 @@ This project utilizes the following datasets:
 - **MSLUB**: [The Multiple Sclerosis Dataset from The University Hospital of Ljubljana](https://lit.fe.uni-lj.si/en/research/resources/3D-MR-MS/).
   - **Download from the above link**
 
-## Data Preprocessing
+### Data Preprocessing
 Make sure the downloaded and frame-level extracted data is saved in this directory structure:   
 
     DATA
@@ -87,7 +87,7 @@ Make sure the downloaded and frame-level extracted data is saved in this directo
 
 ### Dataset Details
 
-The table below provides information about the datasets details in this project:
+The table below provides information about the dataset details in this project:
 ![Dataset Split Info](/Figures/Data_split_info.png)
 
 ## Running NoPrompt-UAD
