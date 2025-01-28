@@ -51,37 +51,36 @@ This project utilizes the following datasets:
 
 ## Data Preprocessing
 
-Before you begin processing, ensure that the downloaded ZIP files are extracted and arranged into the following directory structure:
-   
+Make sure the downloaded and frame-level extracted data is saved in this directory structure:   
     DATA
     ├── 
     │   ├── BraTS20 
     │   │   ├── Frames
     │   │   ├── GT Mask
-    │   │   └── train_file_names
-    │   │   └── val_file_names
-    │   │   └── test_file_names
+    │   │   └── train_file_names (txt file)
+    │   │   └── val_file_names (txt file)
+    │   │   └── test_file_names (txt file)
     │  
     │   ├── BraTS21 
     │   │   ├── Frames
     │   │   ├── GT Mask
-    │   │   └── train_file_names
-    │   │   └── val_file_names
-    │   │   └── test_file_names
+    │   │   └── train_file_names (txt file)
+    │   │   └── val_file_names (txt file)
+    │   │   └── test_file_names (txt file)
     │  
     │   ├── BraTS23 
     │   │   ├── Frames
     │   │   ├── GT Mask
-    │   │   └── train_file_names
-    │   │   └── val_file_names
-    │   │   └── test_file_names
+    │   │   └── train_file_names (txt file)
+    │   │   └── val_file_names (txt file)
+    │   │   └── test_file_names (txt file)
     │  
     │   ├── MSD 
     │   │   ├── Frames
     │   │   ├── GT Mask
-    │   │   └── train_file_names
-    │   │   └── val_file_names
-    │   │   └── test_file_names
+    │   │   └── train_file_names (txt file)
+    │   │   └── val_file_names (txt file)
+    │   │   └── test_file_names (txt file)
     ├──
 
 
