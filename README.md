@@ -118,13 +118,11 @@ The table below provides information about the datasets details in this project:
      - Other Inference settings  
 
 <!--
-
 ### Qualitative results:
 We present below a few comparisons in terms of qualitative and quantitative results.
 <img alt="image" src="images/Qualitative_Results.png" style="width: 100%;" height=500>
-
 ### Quantitative results:
-![image](images/Quantitative_Results.png)
+![Dataset Split Info](/Figures/Data_split_info.png)
 
 ## Citation
 If you use this code in your research, please cite our paper:
