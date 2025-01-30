@@ -30,7 +30,7 @@ commands = [
         "--device", "cuda:0",
         "--batch_size", "1",
         "--seed", "True",
-        "--folder_name", "Write Folder name according to convenience",
+        "--folder_name", "Write Folder name in which checkpoints have been saved",
         "--test_dataset", test_dataset[0]
     ]
 ]
