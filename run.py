@@ -24,14 +24,14 @@ dataset = ["BraTS20", "BraTS21", "BraTS23", "MSD"]
 commands = [
     [
         "python", "train_test.py", "base.txt",
-        "--dataset_name", dataset,
+        "--dataset_name", dataset[0],
         "--fold", "[0,1]",
         "--device", "cuda",
         "--learning_rate", "1e-2",
         "--batch_size", "16",
         "--seed", "True",
         "--num_epochs", "200",
-        "--folder_name", "try_ActivePointEmbeddingLoss_MSE2_0.4_FPpenalty",
+        "--folder_name", "Write Folder name according to convenience",
         "--pre_training", "False"
     ]
 ]
