@@ -49,40 +49,26 @@ This project utilizes the following datasets:
 - **MSLUB**: [The Multiple Sclerosis Dataset from The University Hospital of Ljubljana](https://lit.fe.uni-lj.si/en/research/resources/3D-MR-MS/).
   - **Download from the above link**
 
-### Data Preprocessing
-Make sure the downloaded and frame-level extracted data is saved in this directory structure:   
+## Data Preprocessing
+Follow these steps to prepare the data for processing:
 
-    DATA
-    ├── 
-    │   ├── BraTS20 
-    │   │   ├── Frames
-    │   │   ├── GT Mask
-    │   │   └── train_file_names (txt file)
-    │   │   └── val_file_names (txt file)
-    │   │   └── test_file_names (txt file)
-    │  
-    │   ├── BraTS21 
-    │   │   ├── Frames
-    │   │   ├── GT Mask
-    │   │   └── train_file_names (txt file)
-    │   │   └── val_file_names (txt file)
-    │   │   └── test_file_names (txt file)
-    │  
-    │   ├── BraTS23 
-    │   │   ├── Frames
-    │   │   ├── GT Mask
-    │   │   └── train_file_names (txt file)
-    │   │   └── val_file_names (txt file)
-    │   │   └── test_file_names (txt file)
-    │  
-    │   ├── MSD 
-    │   │   ├── Frames
-    │   │   ├── GT Mask
-    │   │   └── train_file_names (txt file)
-    │   │   └── val_file_names (txt file)
-    │   │   └── test_file_names (txt file)
-    ├──
+1. **Download the Dataset**:
+   - Download the dataset and save it in the `DATA` directory of the project.
 
+2. **Organize the Dataset**:
+   - Ensure that the volumes are saved in one folder and the corresponding GT (Ground Truth) masks are saved in a separate folder within the `DATA` directory.
+
+3. **Set Up Paths**:
+   - Open the `Data_Extraction.py` script in the `DATA` directory.
+   - Modify the paths in the script to point to the correct locations of your downloaded dataset and masks.
+
+4. **Run the Data Extraction Script**:
+   - After adjusting the paths, run the `Data_Extraction.py` script to process the data.
+
+5. **Check Folder Structure**:
+   - Once the extraction is complete, make sure the extracted data is saved in the suggested folder structure outlined in the `DPT/readme.md`.
+
+   > **Note**: Ensure that the final structure of the data follows the guidelines provided in the `DPT/readme.md` file for consistency.
 
 
 ### Dataset Details
