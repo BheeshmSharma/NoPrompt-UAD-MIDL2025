@@ -3,6 +3,8 @@ import numpy as np
 import nibabel as nib
 from PIL import Image
 from tqdm import tqdm
+import random
+
 
 def save_frame(volume_frame, mask_frame, frame_index, volume_name, frame_folder, mask_folder, non_zero_file, zero_file):
     # Convert the volume and mask frames to images
@@ -56,16 +58,78 @@ def process_nii_files(volume_folder, gt_mask_folder, frame_folder, mask_folder, 
                 # Save frame and categorize based on mask values
                 save_frame(volume_frame, gt_mask_frame, frame_index, volume_name, frame_folder, mask_folder, non_zero_file, zero_file)
 
+
+def read_patient_filenames(txt_file):
+    """ Reads a TXT file and groups filenames by patient ID. """
+    patient_dict = {}
+
+    with open(txt_file, "r") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        filename = line.strip()  # Remove newline characters
+        patient_id = filename.split('_')[0]  # Extract patient ID (assuming first part before '_')
+
+        if patient_id not in patient_dict:
+            patient_dict[patient_id] = []
+        patient_dict[patient_id].append(filename)
+
+    return patient_dict
+
+def split_patients(patient_ids, train_ratio=0.80, val_ratio=0.05):
+    """ Splits patient IDs into train, val, and test sets while maintaining consistency. """
+    random.shuffle(patient_ids)  # Shuffle for randomness
+
+    total = len(patient_ids)
+    train_idx = int(train_ratio * total)
+    val_idx = train_idx + int(val_ratio * total)
+
+    train_patients = set(patient_ids[:train_idx])
+    val_patients = set(patient_ids[train_idx:val_idx])
+    test_patients = set(patient_ids[val_idx:])
+
+    return train_patients, val_patients, test_patients
+
+def save_split_frames(patient_dict, patient_set, filename):
+    """ Saves frames of selected patients into a given file. """
+    with open(filename, "w") as f:
+        for patient in patient_set:
+            for frame in patient_dict.get(patient, []):
+                f.write(frame + "\n")
+
 if __name__ == "__main__":
     # Input paths
-    volume_folder = './Dataste/Volumes/'
-    gt_mask_folder = './Dataste/Volumes/'
-    frame_folder = './Dataste/Frames/'
-    mask_folder = './Dataste/Masks/'
+    volume_folder = './Dataset/Volumes/'
+    gt_mask_folder = './Dataset/Volumes/'
+    frame_folder = './Dataset/Frames/'
+    mask_folder = './Dataset/Masks/'
     
     # Output text files
-    Healthy = "./Dataste/Healthy_frame_names.txt"
-    Unhealthy = "./Dataste/Unhealthy_frame_names.txt"
+    Healthy = "./Dataset/Healthy_frame_names.txt"
+    Unhealthy = "./Dataset/Unhealthy_frame_names.txt"
 
     # Process the nii files
     process_nii_files(volume_folder, gt_mask_folder, frame_folder, mask_folder, Unhealthy, Healthy)
+
+    # Output folder
+    output_folder = "./Dataset/"
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Read filenames grouped by patient
+    Unhealthy_patients = read_patient_filenames(Unhealthy)
+    Healthy_patients = read_patient_filenames(Healthy)
+
+    # Get all unique patient IDs
+    all_patients = set(Unhealthy_patients.keys()).union(set(Healthy_patients.keys()))
+
+    # Split patients consistently across train, val, and test
+    train_patients, val_patients, test_patients = split_patients(list(all_patients))
+
+    # Save frames while keeping patient-wise consistency
+    save_split_frames(Healthy_patients, train_patients, os.path.join(output_folder, "Healthy_train.txt"))
+    save_split_frames(Healthy_patients, val_patients, os.path.join(output_folder, "Healthy_val.txt"))
+    save_split_frames(Healthy_patients, test_patients, os.path.join(output_folder, "Healthy_test.txt"))
+
+    save_split_frames(Unhealthy_patients, train_patients, os.path.join(output_folder, "Unhealthy_train.txt"))
+    save_split_frames(Unhealthy_patients, val_patients, os.path.join(output_folder, "Unhealthy_val.txt"))
+    save_split_frames(Unhealthy_patients, test_patients, os.path.join(output_folder, "Unhealthy_test.txt"))
