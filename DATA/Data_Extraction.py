@@ -4,6 +4,7 @@ import nibabel as nib
 from PIL import Image
 from tqdm import tqdm
 import random
+import shutil
 
 
 def save_frame(volume_frame, mask_frame, frame_index, volume_name, frame_folder, mask_folder, non_zero_file, zero_file):
@@ -97,6 +98,22 @@ def save_split_frames(patient_dict, patient_set, filename):
             for frame in patient_dict.get(patient, []):
                 f.write(frame + "\n")
 
+def load_filenames(txt_file):
+    """ Read the text file and return a set of file names """
+    with open(txt_file, "r") as f:
+        return set(line.strip() for line in f.readlines())
+
+# Copy files to respective folders
+def copy_files(file_list, dest_folder, frame_folder):
+    copied = 0
+    for file_name in file_list:
+        src_path = os.path.join(frame_folder, file_name)
+        dest_path = os.path.join(dest_folder, file_name)
+        if os.path.exists(src_path):
+            shutil.copy(src_path, dest_path)
+            copied += 1
+    return copied
+
 if __name__ == "__main__":
     # Input paths
     volume_folder = './Dataset/Volumes/'
@@ -133,3 +150,20 @@ if __name__ == "__main__":
     save_split_frames(Unhealthy_patients, train_patients, os.path.join(output_folder, "Unhealthy_train.txt"))
     save_split_frames(Unhealthy_patients, val_patients, os.path.join(output_folder, "Unhealthy_val.txt"))
     save_split_frames(Unhealthy_patients, test_patients, os.path.join(output_folder, "Unhealthy_test.txt"))
+
+
+    # Define paths for healthy and Unhealthy frames
+    healthy_folder = "./Dataset/Healthy_Frames"
+    unhealthy_folder = "./Dataset/Unhealthy_Frames"
+    
+    # Create target folders if they don't exist
+    os.makedirs(healthy_folder, exist_ok=True)
+    os.makedirs(unhealthy_folder, exist_ok=True)
+    
+    # Load filenames from TXT files
+    healthy_files = load_filenames(Healthy)
+    unhealthy_files = load_filenames(Unhealthy)
+
+    # Copy files
+    healthy_copied = copy_files(healthy_files, healthy_folder, frame_folder)
+    unhealthy_copied = copy_files(unhealthy_files, unhealthy_folder, frame_folder)
