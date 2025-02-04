@@ -1,26 +1,20 @@
-# Standard library imports
-import os
-import argparse
 
-# Third-party library imports
-import torch
-from yacs.config import CfgNode as CN
-
-# Custom library imports
 from dassl.utils import setup_logger, set_random_seed, collect_env_info
 from dassl.config import get_cfg_default
 from dassl.engine import build_trainer
 
-# Trainer module imports
+from yacs.config import CfgNode as CN
+
 import trainers.DPT
 import trainers.VLP
 import trainers.VPT
 
-# Dataset module imports
 import datasets.caltech101
+import argparse
 
-# Environment variable setting
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import os
+import torch
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 def extend_cfg(cfg):
@@ -35,8 +29,23 @@ def extend_cfg(cfg):
         cfg.TRAINER.MY_MODEL.PARAM_C = False
     """
     from yacs.config import CfgNode as CN
-  
+
+    
+    
     cfg.DATASET.SUBSAMPLE_CLASSES = 'all'
+
+                
+
+
+    #COMPLETELY NEW
+
+         #THIS IS COMPLETELY NEW
+    
+
+    
+    
+    
+    #END UPDATES
 
     cfg.TRAINER.COOP = CN()
     cfg.TRAINER.COOP.N_CTX = 16  # number of context vectors
@@ -138,13 +147,15 @@ def reset_cfg(cfg, args):
         cfg.EVAL.CLASSIFY=False
     else:
         cfg.EVAL.CLASSIFY=True
+         
+
+    cfg.EVAL.THRESHOLD=args.threshold  
 
     if(args.median=="False"):
         cfg.EVAL.MEDIAN=False
     else:
         cfg.EVAL.MEDIAN=True
         
-    cfg.EVAL.THRESHOLD=args.threshold  
 
         
 
@@ -153,25 +164,22 @@ def reset_cfg(cfg, args):
 def setup_cfg(args):
 
     cfg=get_cfg_default()
+    cfg=extend_cfg(cfg)  # CHANGES WE WANTED TO BRING IN
 
-    #Default changes to cfg
-    cfg=extend_cfg(cfg) 
-
-    # 1. import config from dataset config file
     if args.dataset_config_file:
       cfg.merge_from_file(args.dataset_config_file)
 
-    # 2. import config from trainer config file
+      # 2. From the method config file
     if args.config_file:
       cfg.merge_from_file(args.config_file)
     
-    # 3. From input arguments
+  # 3. From input arguments
     reset_cfg(cfg, args)
 
     # 4. From optional input arguments
     cfg.merge_from_list(args.opts)
 
-    '''In case you want to freeze the cfg and allow no more changes'''
+    #now no more changes to the configs for the rest of the experiment
     #cfg.freeze()
     
     
@@ -182,7 +190,9 @@ def setup_cfg(args):
 
 
 def main(args):
-
+    
+    #print('ARGS',args)
+    
     cfg=setup_cfg(args)
 
     if cfg.SEED >= 0:
@@ -195,23 +205,44 @@ def main(args):
     if torch.cuda.is_available() and cfg.USE_CUDA:
       torch.backends.cudnn.benchmark = True
     
+    train=False
+    cond=True
+    classify_metrics=False
+
+    #trainer=build_trainer(cfg)
+    #trainer.train()
+
 
     trainer=build_trainer(cfg)
-    trainer.train()
+    trainer.load_model(cfg.OUTPUT_DIR,epoch=cfg.OPTIM.MAX_EPOCH)  
+    trainer.create_maps("map_location")
+
+    '''
 
     if cfg.EVAL.RUN:
  
       cfg.DATASET.TRAIN_PERCENT=0
       cfg.DATASET.VAL_PERCENT=0
+     
+      # NEED TO REBUILD TRAINER TO GET ENTIRE DATASET INTO TESTING
 
       map_location=f'{cfg.DATASET.NAME}/{cfg.DATASET.NUM_SHOTS}/{cfg.EVAL.THRESHOLD}'
       trainer=build_trainer(cfg)
-      trainer.load_model(cfg.OUTPUT_DIR,epoch=cfg.OPTIM.MAX_EPOCH)
-      trainer.create_maps(map_location)
-      trainer.generate_metrics(map_location,threshold=cfg.EVAL.THRESHOLD,median=cfg.EVAL.MEDIAN)
+      #print("LOADING MODEL")
+      trainer.load_model(cfg.OUTPUT_DIR,epoch=cfg.OPTIM.MAX_EPOCH)  
+      #print("DONE LOADING")
+      #print('CREATING MAPS')
+      trainer.create_maps_eval(map_location)
+      print('MAPS CREATED')
+      #trainer.generate_metrics(map_location,threshold=cfg.EVAL.THRESHOLD,median=cfg.EVAL.MEDIAN)
+
+    '''
+    
 
 
 if __name__=='__main__':
+    
+    
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=str, default="", help="path to dataset")
@@ -302,5 +333,293 @@ if __name__=='__main__':
         help="modify config options using the command-line",
     )
     args = parser.parse_args()
+    
 
     main(args)
+    
+    
+
+
+ 
+    
+    #SETING UP THE SPLIT WHILE MAKING A NEW DATASET
+    # cfg.DATASET.NAME='MSD'
+    # trainer=build_trainer(cfg)
+    
+    
+    #TRAINING A MODEL
+    
+    '''
+    
+    cfg.DATASET.NAME='BraTS23'
+    cfg.DATASET.NUM_SHOTS= 10
+    cfg.OPTIM.MAX_EPOCH= 5
+    cfg.OUTPUT_DIR=f'models/23/test'
+    trainer=build_trainer(cfg)
+    trainer.train()
+    
+    '''
+    
+    #CREATING MAPS
+    
+    
+    '''
+    cfg.DATASET.TRAIN_PERCENT=0
+    cfg.DATASET.VAL_PERCENT=0
+    cfg.DATASET.NAME=f'BraTS23'
+    model_dir=f'models/23/test'
+    load_epoch= 5
+    trainer=build_trainer(cfg)
+    trainer.load_model(model_dir,epoch=load_epoch)
+    trainer.create_maps(f'23/test/0')
+    '''
+    
+    #CHECKING METRIC
+    '''
+    
+    cfg.DATASET.TRAIN_PERCENT=0
+    cfg.DATASET.VAL_PERCENT=0
+    cfg.DATASET.NAME=f'BraTS23'
+    model_dir=f'models/23/test'
+    load_epoch= 5
+    trainer=build_trainer(cfg)
+    trainer.load_model(model_dir,epoch=load_epoch)
+    #trainer.create_maps(f'23/test/0')
+    trainer.generate_metric(f'23/test/0',0,False)
+    '''
+    
+    
+    ## ARCHIVE CODE
+    
+    #TRAINING USING FOR LOOP
+    
+    '''
+    cfg.DATASET.NAME='Brain302'
+    shots=[64,256,1024]
+    for i in shots:
+      print('HITTING A ', i ,' SHOT')
+      cfg.DATASET.NUM_SHOTS= i
+      cfg.OPTIM.MAX_EPOCH= 60
+      cfg.OUTPUT_DIR=f'models/302/{i}-0-302'
+      trainer=build_trainer(cfg)
+      trainer.train()
+    '''
+    
+    
+    #TRAINING THE FOLDS
+    
+    '''
+    cfg.DATASET.NAME='Brain302'
+    cfg.OUTPUT_DIR=f'models/302/10000-100-1-401-F1'
+    cfg.DATASET.NUM_SHOTS= 10000
+    cfg.OPTIM.MAX_EPOCH= 100
+    trainer=build_trainer(cfg)
+    trainer.train()
+    '''
+    
+    
+    
+    
+    
+    #CREATING METRICS
+    
+    '''
+    
+    cfg.DATASET.TRAIN_PERCENT=0
+    cfg.DATASET.VAL_PERCENT=0
+    
+    
+    models=[401]
+    
+    for j in models:
+    
+      shots=[256]
+      
+      for i in shots:
+        cfg.DATASET.NAME=f'BraTS23'
+        model_dir=f'models/{j}/{i}-0-{j}'
+        load_epoch= 60
+        trainer=build_trainer(cfg)
+        trainer.load_model(model_dir,epoch=load_epoch)
+        #trainer.create_maps(f'{j}/{i}/0')
+        
+        #trainer.generate_metric(f'{j}/{i}/0',400,False)
+        
+    '''
+    
+    # #BRATS21 TRAINED MODEL
+    
+    # folds=['F1','F2','F3','F4','F5']
+    
+    # for i in folds:
+    #   cfg.DATASET.NAME=f'BraTS23'
+    #   model_dir=f'models/401/10000-100-0-401-{i}'
+    #   load_epoch= 100
+    #   trainer=build_trainer(cfg)
+    #   trainer.load_model(model_dir,epoch=load_epoch)
+    #   trainer.create_maps(f'Tr21_Ts23/fold_{i}/0')
+    #   trainer.generate_metric(f'Tr21_Ts23/fold_{i}/0',0,False)
+      
+    # BRATS20 TRAINED MODEL
+    
+    '''
+    
+    folds=['F1','F2','F3','F4','F5']
+    
+    for i in folds:
+      cfg.DATASET.NAME=f'MSD'
+      model_dir=f'models/302/10000-100-0-302-{i}'
+      load_epoch= 100
+      trainer=build_trainer(cfg)
+      trainer.load_model(model_dir,epoch=load_epoch)
+      trainer.create_maps(f'Tr20_Tsmsd/fold_{i}/0')
+      trainer.generate_metric(f'Tr20_Tsmsd/fold_{i}/0',0,False)
+    '''
+    
+    
+    #FOR THE L1,H1 THING
+    '''
+    folds=['F1']
+    
+    
+    #folds=['F2','F3','F4','F5']
+    
+    thresholds=[0]
+    
+    cfg.DATASET.NAME='Brain401'
+    trainer=build_trainer(cfg)
+   
+    print(len(trainer.test_loader))
+    
+    
+    for fold in folds:
+      model_dir=f'./models/302/10000-100-1-302-{fold}'
+      load_epoch=100
+      trainer.load_model(model_dir,epoch=load_epoch)
+      #trainer.create_maps(f'302-401/10000-100-1-302-{fold}/3')
+    
+      for i in thresholds:
+        trainer.generate_metric(f'302-401/10000-100-1-302-{fold}/4',i,False)
+    '''
+    
+    
+    #MEDIAN FILTER VALA
+    '''
+    folds=['F1','F2','F3','F4']
+    thresholds=[0,200,400]
+    cfg.DATASET.NAME='Brain302'
+    trainer=build_trainer(cfg)
+    print(len(trainer.test_loader))
+    
+    for fold in folds:
+      model_dir=f'./models/401/10000-100-0-401-{fold}'
+      load_epoch=100
+      trainer.load_model(model_dir,epoch=load_epoch)
+      #trainer.create_maps(f'401-302/10000-100-0-401-{fold}/1')
+      trainer.generate_metric(f'401-302/10000-100-0-401-{fold}/1',0,True)
+    '''
+    
+    #ABLATION STUDY TRAINING
+    '''
+    
+    alphas=[0.7]
+    
+    c=1
+    
+    for alpha in alphas:
+    
+      cfg.DATASET.NAME='Brain302'
+      cfg.OUTPUT_DIR=f'models/302/10000-100-1-302-F1-A6'
+      cfg.DATASET.NUM_SHOTS= 10000
+      cfg.OPTIM.MAX_EPOCH= 100
+      cfg.TRAINER.ALPHA=alpha
+      trainer=build_trainer(cfg)
+      trainer.train()
+      c+=1
+    
+    '''
+    #ABLATION STUDY MASKS
+    '''
+    folds=['F1']
+    
+    thresholds=[0]
+    types=['A5','A6']
+    
+    cfg.DATASET.NAME='Brain401'
+    trainer=build_trainer(cfg)
+   
+    print(len(trainer.test_loader))
+    
+    
+    for Type in types:
+      model_dir=f'./models/302/10000-100-1-302-F1-{Type}'
+      load_epoch=100
+      trainer.load_model(model_dir,epoch=load_epoch)
+      trainer.create_maps(f'302-401/10000-100-1-302-F1-{Type}/1')
+      for i in thresholds:
+        trainer.generate_metric(f'302-401/10000-100-1-302-F1-{Type}/1',i, False)
+    '''
+    
+    
+    
+    '''
+    shots=['64','256','1024','10000-100']
+    #shots=['10000-100']
+    
+    #cat=[3,4]
+    
+    trainer=build_trainer(cfg)
+    for i in shots:
+      model_dir=f'./models/401/{i}-0-401'
+      if i=='10000-100':
+        load_epoch=100
+      else:
+        load_epoch=60
+      trainer.load_model(model_dir, epoch=load_epoch)
+      trainer.create_maps(f'401/{i}/2') 
+    '''
+       
+    '''
+       
+    #shots=['64','256','1024','10000-100']
+    shots=['10000-100']
+    #thresholds=[200,400]
+    thresholds=[0]
+    cat=[3,4]
+    #cat=[2]
+    trainer=build_trainer(cfg)
+    for i in shots:
+      for j in thresholds:
+        for c in cat:
+          model_dir=f'./models/401/{i}-1-401'
+          if i=='10000-100':
+            load_epoch=100
+          else:
+            load_epoch=60
+          trainer.load_model(model_dir, epoch=load_epoch)
+          trainer.generate_metric(f'401/{i}/{c}',j)
+    '''
+    
+    '''
+    
+    cfg.DATASET.NAME='Brain501'
+    
+    folds=['F1','F2','F3','F4','F5']
+
+    trainer=build_trainer(cfg)
+    
+    
+    for fold in folds:
+    
+      path=f'401-501/10000-100-0-401-{fold}/1'
+    
+      print('FOLD',fold)
+    
+      model_dir=f'./models/401/10000-100-0-401-{fold}'
+      load_epoch=100
+      trainer.load_model(model_dir,epoch=load_epoch)
+      
+      trainer.check(fold,path)
+    
+    
+    '''
