@@ -79,7 +79,15 @@ The table below provides information about the dataset details in this project:
 ## Running NoPrompt-UAD
 
 1. **Environment Setup**:  
-   - Make sure you have followed the environment setup instructions to properly configure your dependencies and environment.  
+   - Make sure you have followed the environment setup instructions to configure your dependencies and environment properly.
+     
+1. **Candidate Location Embedding Setup**:  
+   - To save the Candidate Location Embedding, navigate to the `Fixed_Candidate_Embeddings` directory.
+   - Once inside the directory, run the following `ipynb` file:
+     ```
+     Fixed_Candidate_Location_Embedding.ipynb
+     ```
+    - This will automatically save the Fixed Candidate Location Prompt Embedding within the `Fixed_Candidate_Embeddings` directory.
 
 2. **Training with NoPrompt-UAD**:  
    - To train the model, use the following command:  
