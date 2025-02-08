@@ -91,7 +91,10 @@ The table below provides information about the dataset details in this project:
 3. **DDPT**
    - Follow the instructions provided in the [readme.md](./DDPT/readme.md) file and save the DPPT masks.  
 
-2. **Training with NoPrompt-UAD**:  
+4. **MedSAM**
+   - Follow the instructions provided in the [readme.md](./MedSAM/Readme.md) file and save the MedSAM inference masks.
+
+5. **Training with NoPrompt-UAD**:  
    - To train the model, use the following command:  
      ```bash
      python run.py
@@ -103,7 +106,7 @@ The table below provides information about the dataset details in this project:
      - Early stopping criteria  
      - And other hyperparameters  
 
-3. **Testing the Model**:  
+6. **Testing the Model**:  
    - To test the trained model, use the following command:  
      ```bash
      python test_run.py
