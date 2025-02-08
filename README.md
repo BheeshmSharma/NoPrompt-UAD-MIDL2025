@@ -53,10 +53,10 @@ This project utilizes the following datasets:
 Follow these steps to prepare the data for processing:
 
 1. **Download the Dataset**:
-   - Download the dataset and save it in the `DATA` directory of the project.
+   - Download the dataset and save it in the `DATA` directory.
 
 2. **Organize the Dataset**:
-   - Ensure that the volumes are saved in one folder and the corresponding GT (Ground Truth) masks are saved in a separate folder within the `DATA` directory.
+   - Ensure that the volumes are saved in one folder and the corresponding GT (Ground Truth) masks are saved in a separate folder within the `DATA/Dataset_name/` directory.
 
 3. **Set Up Paths**:
    - Open the `Data_Extraction.py` script in the `DATA` directory.
@@ -66,9 +66,7 @@ Follow these steps to prepare the data for processing:
    - After adjusting the paths, run the `Data_Extraction.py` script to process the data.
 
 5. **Check Folder Structure**:
-   - Once the extraction is complete, make sure the extracted data is saved in the suggested folder structure outlined in the `DDPT/readme.md`.
-
-   > **Note**: Ensure that the final structure of the data follows the guidelines provided in the `DDPT/readme.md` file for consistency.
+   - Once the extraction is complete, ensure that the final structure of the data follows the suggested folder structure outlined in the `DDPT/readme.md` file for consistency.
 
 
 ### Dataset Details
@@ -81,13 +79,16 @@ The table below provides information about the dataset details in this project:
 1. **Environment Setup**:  
    - Make sure you have followed the environment setup instructions to configure your dependencies and environment properly.
      
-1. **Candidate Location Embedding Setup**:  
+2. **Candidate Location Embedding Setup**:  
    - To save the Candidate Location Embedding, navigate to the `Fixed_Candidate_Embeddings` directory.
    - Once inside the directory, run the following `ipynb` file:
      ```
      Fixed_Candidate_Location_Embedding.ipynb
      ```
     - This will automatically save the Fixed Candidate Location Prompt Embedding within the `Fixed_Candidate_Embeddings` directory.
+
+3. **DDPT**"
+   - Follow the instructions provided in the `DPPT/readme.md` file and save the DPPT masks.  
 
 2. **Training with NoPrompt-UAD**:  
    - To train the model, use the following command:  
