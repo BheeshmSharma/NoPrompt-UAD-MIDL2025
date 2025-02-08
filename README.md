@@ -88,8 +88,8 @@ The table below provides information about the dataset details in this project:
      ```
     - This will automatically save the Fixed Candidate Location Prompt Embedding within the `Fixed_Candidate_Embeddings` directory.
 
-3. **DDPT**"
-   - Follow the instructions provided in the `DPPT/readme.md` file and save the DPPT masks.  
+3. **DDPT**
+   - Follow the instructions provided in the [readme.md](./DPPT/readme.md) file and save the DPPT masks.  
 
 2. **Training with NoPrompt-UAD**:  
    - To train the model, use the following command:  
