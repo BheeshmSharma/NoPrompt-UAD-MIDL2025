@@ -95,10 +95,6 @@ The table below provides information about the dataset details in this project:
    - Follow the instructions provided in the [readme.md](./MedSAM/Readme.md) file and save the MedSAM inference masks.
 
 5. **Training with NoPrompt-UAD**:  
-   - To train the model, use the following command:  
-     ```bash
-     python run.py
-     ```  
    - Inside `run.py`, set all the training-related arguments, such as:  
      - Dataset  
      - Number of epochs  
@@ -106,16 +102,21 @@ The table below provides information about the dataset details in this project:
      - Early stopping criteria  
      - And other hyperparameters  
 
+   - To train the model, use the following command:  
+     ```bash
+     python run.py
+     ```  
+
 6. **Testing the Model**:  
+   - Similar to `run.py`, set the testing-related arguments in `test_run.py`, such as:  
+     - Dataset  
+     - Model checkpoint path  
+     - Other Inference settings
+
    - To test the trained model, use the following command:  
      ```bash
      python test_run.py
      ```  
-   - Similar to `run.py`, set the testing-related arguments in `test_run.py`, such as:  
-     - Dataset  
-     - Model checkpoint path  
-     - Other Inference settings  
-
 <!--
 ### Qualitative results:
 We present below a few comparisons in terms of qualitative and quantitative results.
