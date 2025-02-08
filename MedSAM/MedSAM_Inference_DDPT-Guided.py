@@ -73,7 +73,7 @@ def get_bounding_boxes_for_batch(batch_masks):
 Dataset_name = "BraTS20" ## Keep Dataset folder name here
 Prompt_type = "PointsPrompt" ## Keep which type of prompt inference to be performed (default: Box, Point)
 
-Filenames = OS.listdir(f'./DATA/{Dataset_name}/images/Unhealthy/')
+Filenames = os.listdir(f'./DATA/{Dataset_name}/images/Unhealthy/')
 directory = f'./DATA/{Dataset_name}/MedSAM_Mask_with_DDPT_Prompt_{Prompt_type}/'
 image_folder_path = f'./DATA/{Dataset_name}/images/Unhealthy/'
 DDPT_mask_folder_path = f'./DATA/{Dataset_name}/DDPT_Mask/'
