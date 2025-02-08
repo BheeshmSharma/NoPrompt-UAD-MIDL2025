@@ -153,8 +153,8 @@ if __name__ == "__main__":
 
 
     # Define paths for healthy and Unhealthy frames
-    healthy_folder = "./Dataset/images/Healthy_Frames"
-    unhealthy_folder = "./Dataset/images/Unhealthy_Frames"
+    healthy_folder = "./Dataset/images/Healthy"
+    unhealthy_folder = "./Dataset/images/Unhealthy"
     
     # Create target folders if they don't exist
     os.makedirs(healthy_folder, exist_ok=True)
