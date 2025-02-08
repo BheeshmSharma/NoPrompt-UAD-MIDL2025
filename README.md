@@ -48,7 +48,7 @@ This project utilizes the following datasets:
 
 - **MSLUB**: [The Multiple Sclerosis Dataset from The University Hospital of Ljubljana](https://lit.fe.uni-lj.si/en/research/resources/3D-MR-MS/).
   - **Download from the above link**
-
+ 
 ## Data Preprocessing
 Follow these steps to prepare the data for processing:
 
@@ -68,12 +68,11 @@ Follow these steps to prepare the data for processing:
 5. **Check Folder Structure**:
    - Once the extraction is complete, ensure that the final structure of the data follows the suggested folder structure outlined in the `DDPT/readme.md` file for consistency.
 
-<!--
 ### Dataset Details
 
-The table below provides information about the dataset details in this project:
+The following table outlines the patient-wise dataset split used in this work:
+
 ![Dataset Split Info](/Figures/Data_split_info.png)
--->
 
 ## Running NoPrompt-UAD
 
@@ -116,16 +115,28 @@ The table below provides information about the dataset details in this project:
    - To test the trained model, use the following command:  
      ```bash
      python test_run.py
-     ```  
+     ```
 <!--
 ### Qualitative results:
 We present below a few comparisons in terms of qualitative and quantitative results.
 <img alt="image" src="images/Qualitative_Results.png" style="width: 100%;" height=500>
 ### Quantitative results:
 ![Dataset Split Info](/Figures/Data_split_info.png)
+-->
 
 ## Citation
 If you use this code in your research, please cite our paper:
 
+    @inproceedings{
+    sharma2025nopromptuad,
+    title={NoPrompt-{UAD}: An Approach for Prompt-less Unsupervised Anomaly Detection in Brain {MRI} Scans},
+    author={Bheeshm Sharma and Karthikeyan Jaganathan and Balamurugan Palaniappan},
+    booktitle={Submitted to Medical Imaging with Deep Learning},
+    year={2025},
+    url={https://openreview.net/forum?id=Td02nKcDiK},
+    note={under review}
+    }
+
+<!--
 This project draws inspiration and is developed based on the [pddpm-uad](https://github.com/FinnBehrendt/patched-Diffusion-Models-UAD) repository.
 -->
