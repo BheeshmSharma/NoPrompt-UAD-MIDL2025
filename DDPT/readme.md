@@ -1,4 +1,4 @@
-# Weakly Supervised Brain Anamoly Segmentation (Discriminative Dual Prompt Tuning)
+# DDPT-Discriminative Dual Prompt Tuning for Weakly Supervised Brain Anamoly Segmentation
 
 <!--
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
@@ -23,14 +23,12 @@ For a detailed introduction to SPG, please refer to **the [《SPG White Paper》
 
 This code is highly inspired from official [DPT github](https://github.com/fanrena/DPT). The set up steps are similar to that repository, and are shown below.
 
-## Preparing Dataset
+## Dataset Preperation
 
-* Create a folder DATA, then create a folder for the dataset you want to use (Keep the name as the dataset name). Inside this folder, create a folder `images`and then upload all the images based on the healthy and unhealthy images.
-
-* So the folder structure should look like 
+* Please ensure that the final structure of the data follows the suggested structure below: 
 
 ```
-data/
+DATA/
 |
 └── <dataset_name>/
     |
@@ -38,7 +36,7 @@ data/
         |
         ├── <healthy>/
         |
-        └── <Tumour>/
+        └── <Unhealthy>/
 ```
 
 Note that the folder name inside of `images/` is also the class name that will be used later down. Inside of these 2 folders upload the images. The splitting into test and train will be done by the system itself.
