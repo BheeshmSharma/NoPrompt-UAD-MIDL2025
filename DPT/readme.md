@@ -1,4 +1,4 @@
-# Weakly Supervised Brain Anamoly Segmentation using DPT
+# Weakly Supervised Brain Anamoly Segmentation
 
 <!--
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
@@ -18,22 +18,6 @@ The background of this work lies in the critical need for efficient and accurate
 For a detailed introduction to SPG, please refer to **the [《SPG White Paper》](https://spg.openkg.cn/en-US "SPG White Paper") jointly released by Ant Group and OpenKG**.
 
 -->
-
-# Our Approach
-
-
-Core Capabilities of the approach:
-
-* Semantic Modeling and Representation
-  * **Knowledge Modeling**: Employs large-scale pre-trained vision-language models (e.g., CLIP) for enhanced representation of semantic structures in brain MRI images.
-  * **Dual Prompt Tuning (DPT)**: Combines textual and visual prompt optimization to enhance model understanding of medical imaging concepts.
-* Knowledge Construction
-  * **Data to Knowledge**: Utilizes structured datasets (e.g., BraTS20, BraTS21) for training and fine-tuning, enabling the transformation of raw MRI data into meaningful anomaly detection insights.
-  * **Iterative Improvement**: Continuously improves anomaly localization and segmentation through weakly-supervised methodologies, integrating few-shot learning to achieve robust results with limited data.
-* Cross-Domain Generalizability
-  * **Dataset Flexibility**: Demonstrates significant performance across multiple datasets, including cross-domain applications (e.g., BraTS20 to BraTS21).
-  * **Weak-Supervision Enhancement**: Handles tasks with minimal data labeling through advanced few-shot learning and segmentation map generation techniques.
-
 
 # How to use
 
