@@ -20,7 +20,6 @@ class Datum:
     """
 
     def __init__(self, impath="", label=0, domain=0, classname=""):
-        #print('HERES OUR GUY ->',impath)
         assert isinstance(impath, str)
         assert check_isfile(impath)
 
@@ -63,11 +62,9 @@ class DatasetBase:
         self._test = test  # test data
         
         
-        #IN CASE WE ARE HAVING ANY TRAINING ITEMS
         if(train_x):
           self._num_classes = self.get_num_classes(train_x)
           self._lab2cname, self._classnames = self.get_lab2cname(train_x)
-        #WHEN THERE IS NO TRAINING INSTANCE (DURING COMPLETE TEST)
         else:
           self._num_classes = self.get_num_classes(test)
           self._lab2cname, self._classnames = self.get_lab2cname(test)
@@ -174,7 +171,6 @@ class DatasetBase:
         print("File extracted to {}".format(osp.dirname(dst)))
 
 
-    #function being used in caltech101.py
     def generate_fewshot_dataset(
         self, *data_sources, num_shots=-1, repeat=False
     ):
@@ -201,12 +197,8 @@ class DatasetBase:
 
         for data_source in data_sources:
             tracker = self.split_dataset_by_label(data_source)
-            #so what tracker is now, is its a dictionary where the key is the label, and items having that label is the values
-            #hence we get many values for a particular key, and hence splitting the dataset by label
             dataset = []
 
-            #so now for example if we had 5 images of class 'apple', the way this iteration works now is that
-            #label='apple' and items is the list of the 5 Datum objects
             for label, items in tracker.items():
                 if len(items) >= num_shots:
                     sampled_items = random.sample(items, num_shots)
@@ -216,15 +208,13 @@ class DatasetBase:
                     else:
                         sampled_items = items
                 
-                #extend is basically used when you want to append a list to another
                 dataset.extend(sampled_items)
 
             output.append(dataset)
 
         if len(output) == 1:
             return output[0]
-
-        #so finally at the end of it all, you have a list of Datum objects equal to the number of shots, per class [which is exactly what is needed]
+        
         return output
     
 

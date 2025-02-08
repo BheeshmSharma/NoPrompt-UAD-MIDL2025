@@ -22,9 +22,7 @@ def build_data_loader(
     dataset_wrapper=None
 ):
     # Build sampler
-    '''
-    SO THE BUILD SAMPLER BASICALLY JUST RETURNS THE SAMPLER BASED ON THE TYPE THAT HAS BEEN PUT IN
-    '''
+
     sampler = build_sampler(
         sampler_type,
         cfg=cfg,
@@ -38,7 +36,6 @@ def build_data_loader(
         dataset_wrapper = DatasetWrapper
 
     # Build data loader
-    '''MAKES A BASIC DATA LOADER FROM TORCH, BUT THEN USING DATASET_WRAPPER CLASS FROM BELOW'''
     data_loader = torch.utils.data.DataLoader(
         dataset_wrapper(cfg, data_source, transform=tfm, is_train=is_train),
         batch_size=batch_size,
@@ -49,7 +46,6 @@ def build_data_loader(
     )
     assert len(data_loader) > 0
 
-    '''FINALLY RETURNING OUT THE DATA LOADER'''
     return data_loader
 
 
@@ -63,13 +59,9 @@ class DataManager:
         dataset_wrapper=None
     ):
         # Load dataset
-        '''SO BUILD DATASET GIVEN THE cfg BASICALLY GOES THORUGH THE REGISTRY OF THE DATASETS AND RETURNS
-        THE DATASET IN THE cfg IF IT DOES EXIST IN THE REGISTRY'''
         dataset = build_dataset(cfg)
 
         # Build transform
-        '''SO THIS PART AGAIN COMES OUT FROM THE build_trasnform function WHICH BASICALLY BASED ON THE INPUT
-        FROM THE cfg, AND BASED ON WHETHER WE ARE TRAINING OR NOT -> RETURNS A LIST OF TRANSFORMS TO DO ON THE DATALOADER'''
         if custom_tfm_train is None:
             tfm_train = build_transform(cfg, is_train=True)
         else:
@@ -84,10 +76,6 @@ class DataManager:
 
         # Build train_loader_x
 
-        '''NOW as seen before how the build_data_loader is defined just above this class,
-    
-        Now the deal would be to create a train_loader_x based on the inputs in the cfg
-        '''
         
         #CREATING A DATALOADER_X only if there is any training instance (IN THE CASE OF TESTING)
         if (len(dataset.train_x)!=0):
@@ -106,9 +94,6 @@ class DataManager:
           train_loader_x=[] 
 
         # Build train_loader_u
-        '''
-        Also making up this train_loader_u
-        '''
         train_loader_u = None
         if dataset.train_u:
             sampler_type_ = cfg.DATALOADER.TRAIN_U.SAMPLER
@@ -135,9 +120,6 @@ class DataManager:
             )
 
         # Build val_loader
-        '''
-        Finally making up the val_loader and the test_loader 
-        '''
         val_loader = None
         if dataset.val:
             val_loader = build_data_loader(
@@ -189,7 +171,6 @@ class DataManager:
         return self._lab2cname
 
     def show_dataset_summary(self, cfg):
-        '''FUNCTION MADE JUST FOR THE VERBOSE OF THE DATAMANGER'''
         dataset_name = cfg.DATASET.NAME
         source_domains = cfg.DATASET.SOURCE_DOMAINS
         target_domains = cfg.DATASET.TARGET_DOMAINS

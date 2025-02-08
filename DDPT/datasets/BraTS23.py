@@ -32,8 +32,7 @@ class BraTS23(DatasetBase):
         self.image_dir = os.path.join(self.dataset_dir, "images")
         
         
-        #.json file -> CONTAINS THE SPLIT OF THE DATA TRAIN,TEST,VAL
-        #split_fewshot -> stores the pickled lists
+
         
         if(cfg.DATASET.TRAIN_PERCENT!=0):  #THIS IS RUN DURING TRAINING
           self.split_path = os.path.join(self.dataset_dir, "split_brats23.json")

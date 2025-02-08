@@ -116,8 +116,6 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
         A torchvision transform that converts a PIL image into a tensor that the returned model can take as its input
     """
 
-    #so basically this name could be 2 things -> the name of the model, from which we use the _download function
-    #or it shd be the path of the model checkpoint
 
     if name in _MODELS:
         model_path = _download(_MODELS[name])
@@ -127,14 +125,10 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
         raise RuntimeError(f"Model {name} not found; available models = {available_models()}")
 
     try:
-        # loading JIT archive
         model = torch.jit.load(model_path, map_location=device if jit else "cpu").eval()
-        #so this jit thing is to basically just load the model in case of places where theres no python environment. Morever its for more of a 
-        #production setup than the training one. In short just another way to load a model given the weights
+       
         state_dict = None
     except RuntimeError:
-        # So this whole snippet being run when theres some error meaning that the model wasnt loaded.
-        #finally we end up creating the state_dict by loading the pt file
         if jit:
             warnings.warn(f"File {model_path} is not a JIT archive. Loading as a state dict instead")
             jit = False
@@ -142,16 +136,11 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
         state_dict = torch.load(model_path, map_location="cpu")
 
     if not jit:
-        #from the state_dict created, we now build the model from the model.py file in the same folder
         model = build_model(state_dict or model.state_dict()).to(device)
         if str(device) == "cpu":
             model.float()
-        #returning the model and the transform function now
         return model, _transform(model.visual.input_resolution)
     
-
-
-    # patch the device names
     device_holder = torch.jit.trace(lambda: torch.ones([]).to(torch.device(device)), example_inputs=[])
     device_node = [n for n in device_holder.graph.findAllNodes("prim::Constant") if "Device" in repr(n)][-1]
 
@@ -206,7 +195,6 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
 
 def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: bool = False) -> torch.LongTensor:
 
-    #STILL HAVENT FOUND WHERE THIS FUNCTION IS CALLED
     """
     Returns the tokenized representation of given input string(s)
 
@@ -228,7 +216,6 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
     if isinstance(texts, str):
         texts = [texts]
 
-    #this _tokenizer comes from the simple_tokenizer.py file
     sot_token = _tokenizer.encoder["<|startoftext|>"]
     eot_token = _tokenizer.encoder["<|endoftext|>"]
     all_tokens = [[sot_token] + _tokenizer.encode(text) + [eot_token] for text in texts]

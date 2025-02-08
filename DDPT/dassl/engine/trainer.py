@@ -85,13 +85,6 @@ class TrainerBase:
 
     def register_model(self, name="model", model=None, optim=None, sched=None):
 
-        '''
-        SO BASICALLY WE FEED IN A MODEL NAME, THE MODEL, OPTIMISER AND SCHEDULER
-        AND THIS FUNCTION JUST FEEDS IT INTO SELF
-        '''
-        
-        
-        #SNIPPET TO MAKE SURE THAT super().__init__() IS FIRST CALLED BEFORE USING THIS
         if self.__dict__.get("_models") is None:
             raise AttributeError(
                 "Cannot assign model before super().__init__() call"
@@ -109,17 +102,12 @@ class TrainerBase:
 
 
         assert name not in self._models, "Found duplicate model names"
-        #NOW SETTING IN THE MODELS, OPTIMISER AND SCHEDULER FOR THE TRAINER
         self._models[name] = model
         self._optims[name] = optim
         self._scheds[name] = sched
 
     def get_model_names(self, names=None):
 
-        '''
-        So now the goal of this function is to return the names input to this function.
-        But will check if they all belong to the model names first or not
-        '''
         
         names_real = list(self._models.keys())
         if names is not None:
@@ -134,8 +122,7 @@ class TrainerBase:
         self, epoch, directory, is_best=False, val_result=None, model_name=""
     ):
         '''
-        Basically to create a checkpoint to store the state of the model, optimiser and scheduler,
-        but doing this for every names that is stored in SELF
+    
 
         Args:
             epoch (int) : epoch of training the model
@@ -145,13 +132,10 @@ class TrainerBase:
             model_name (str) : needed to store the checkpoint
         '''
 
-        #GETTING ALL THE NAMES HERE
         names = self.get_model_names()
 
-        #FOR EACH NAME
         for name in names:
 
-            #GETTING ALL THE STATE DICTIONARIES FOR MODEL, OPTIM, AND SCHED
             model_dict = self._models[name].state_dict()
 
             optim_dict = None
@@ -162,10 +146,8 @@ class TrainerBase:
             if self._scheds[name] is not None:
                 sched_dict = self._scheds[name].state_dict()
 
-            #THIS FUNCTION COMES FROM DASSL.UTILS, AND BASICALLY SAVES THE CHECKPOINT
             save_checkpoint(
 
-                #FIRST, THE ENTIRE STATE WE WANT TO SAVE
                 {
                     "state_dict": model_dict,
                     "epoch": epoch + 1,
@@ -173,7 +155,7 @@ class TrainerBase:
                     "scheduler": sched_dict,
                     "val_result": val_result
                 },
-                osp.join(directory, name),    #THE LOCATION WHERE WE'RE SAVING IT (DIRECTORY+NAME)
+                osp.join(directory, name),    
                 is_best=is_best,
                 model_name=model_name,
             )
@@ -201,8 +183,6 @@ class TrainerBase:
 
         for name in names:
             path = osp.join(directory, name)
-            #POINT OF THIS FUNCTION IS TO UPDATE THE STATE OF THE MODEL, OPTIMISER AND THE SCHEDULER
-            #USING THE CHECKPOINT STORED AT 'PATH'F
             start_epoch = resume_from_checkpoint(
                 path, self._models[name], self._optims[name],
                 self._scheds[name]
@@ -224,7 +204,6 @@ class TrainerBase:
 
         names = self.get_model_names()
 
-        # By default, the best model is loaded
         model_file = "model-best.pth.tar"
 
         if epoch is not None:
@@ -285,8 +264,6 @@ class TrainerBase:
 
     def write_scalar(self, tag, scalar_value, global_step=None):
         if self._writer is None:
-            # Do nothing if writer is not initialized
-            # Note that writer is only used when training is needed
             pass
         else:
             self._writer.add_scalar(tag, scalar_value, global_step)
@@ -367,17 +344,13 @@ class SimpleTrainer(TrainerBase):
         else:
             self.device = torch.device("cpu")
 
-        # Save as attributes some frequently used variables
         self.start_epoch = self.epoch = 0
         self.max_epoch = cfg.OPTIM.MAX_EPOCH
         self.output_dir = cfg.OUTPUT_DIR
 
         self.cfg = cfg
-        #go to the particular functions, have defined well there
         self.build_data_loader()
         self.build_model()
-        #again one of those registries where you regirster the evaluator, in this case in the 
-        # dassl/evaluation/evaluator.py file, we have a classification evaluator registers, so that shd be the one we're dealing with here
         self.evaluator = build_evaluator(cfg, lab2cname=self.lab2cname)
         self.best_result = -np.inf
 
@@ -401,19 +374,16 @@ class SimpleTrainer(TrainerBase):
         """
         dm = DataManager(self.cfg)
 
-        '''NOW TRANSFERRING DOWN THE train_loader_x, train_loader_u, val_loader and test_loader'''
-
+        
         self.train_loader_x = dm.train_loader_x
         self.train_loader_u = dm.train_loader_u  # optional, can be None
         self.val_loader = dm.val_loader  # optional, can be None
         self.test_loader = dm.test_loader
 
-        '''AND SOME MORE PARAMETERS'''
         self.num_classes = dm.num_classes
         self.num_source_domains = dm.num_source_domains
         self.lab2cname = dm.lab2cname  # dict {label: classname}
 
-        '''AND FINALLY THE DATAMANAGER ITSELF'''
         self.dm = dm
 
     def build_model(self):
@@ -427,23 +397,14 @@ class SimpleTrainer(TrainerBase):
         cfg = self.cfg
 
         print("Building model")
-        #SIMPLE NET WAS JUST DEFINED IN THE BEGINNING OF THIS FILE, TAKES IN cfg, 
-        # the MODEL of cfg for the backbone, and the number of classes to create a simple net for classification
         self.model = SimpleNet(cfg, cfg.MODEL, self.num_classes)
-        #setting up some weights, if the cfg tells to do so
         if cfg.MODEL.INIT_WEIGHTS:
             load_pretrained_weights(self.model, cfg.MODEL.INIT_WEIGHTS)
         self.model.to(self.device)
         print(f"# params: {count_num_param(self.model):,}")
 
-        #Nothing really crazy happening in the build_optimizer function, Just takes in the name of optimizer from cfg
-        #check if its available, if yeah, then returns out the torch.optim after feeding in the parameters
         self.optim = build_optimizer(self.model, cfg.OPTIM)
-        #What this does now is returns a scheduler which is either single step, multistep or cosine based on the input, 
-        #and will also have a warm rate is given in the cfg
         self.sched = build_lr_scheduler(self.optim, cfg.OPTIM)
-        #now here going to use the function we defined in the base trainer, which takes in the model name
-        # model, optim and sched states
         self.register_model("model", self.model, self.optim, self.sched)
 
         device_count = torch.cuda.device_count()
@@ -452,12 +413,9 @@ class SimpleTrainer(TrainerBase):
             print(f"Detected {device_count} GPUs (use nn.DataParallel)")
             self.model = nn.DataParallel(self.model)
 
-    #BASICALLY CALLING THE TRAIN FUNCTION OF THE BASE TRAINER ITSELF
     def train(self):
         super().train(self.start_epoch, self.max_epoch)
 
-    #UPDATING THE BEFORE_TRAIN FUNCTION OF PARENT CLASS
-    '''deal here is to just set the output dir, resume model from checkpoint, and start logging'''
     def before_train(self):
         directory = self.cfg.OUTPUT_DIR
         if self.cfg.RESUME:
@@ -473,7 +431,6 @@ class SimpleTrainer(TrainerBase):
         self.time_start = time.time()
 
     #UPDATING THE AFTER_TRAIN FUNCTION OF PARENT CLASS
-    '''deal here too is more about doing the logging itself, and if or not to do the testing'''
     def after_train(self):
         print("Finish training")
 
@@ -495,8 +452,6 @@ class SimpleTrainer(TrainerBase):
         self.close_writer()
 
     #UPDATING THE AFTER_EPOCH FROM THE PARENT CLASS
-    '''deal here is to see if we wanna stop training, and storing the model is it either gets the 
-    best metric or if the epoch has reached the checkpoint freq'''
     def after_epoch(self):
         last_epoch = (self.epoch + 1) == self.max_epoch
         do_test = not self.cfg.TEST.NO_TEST
@@ -524,8 +479,6 @@ class SimpleTrainer(TrainerBase):
     def test(self, split=None):
         """A generic testing pipeline."""
 
-        '''ALSO HERES WHERE WE WILL EXTENSIVELY BE USING THE DIFFERENT FUNCTIONS OF THE EVALUATOR
-        (RESET, PROCESS AND EVALUATE) -> MAKES THE ENTIRE TESTING PART JUST A BIT TOO SIMPLE ON CODE'''
         self.set_model_mode("eval")
         self.evaluator.reset()
 
@@ -553,7 +506,6 @@ class SimpleTrainer(TrainerBase):
 
         return list(results.values())[0]
 
-    #QUITE SIMPLE FUNCTION THIS NOW
     def model_inference(self, input):
         return self.model(input)
 
@@ -567,7 +519,6 @@ class SimpleTrainer(TrainerBase):
         return input, label
 
     def get_current_lr(self, names=None):
-        '''Basically just returns out the lr of the first named model'''
         names = self.get_model_names(names)
         name = names[0]
         return self._optims[name].param_groups[0]["lr"]
@@ -589,7 +540,6 @@ class TrainerXU(SimpleTrainer):
         batch_time = AverageMeter()
         data_time = AverageMeter()
 
-        # Decide to iterate over labeled or unlabeled dataset
         len_train_loader_x = len(self.train_loader_x)
         len_train_loader_u = len(self.train_loader_u)
         if self.cfg.TRAIN.COUNT_ITER == "train_x":
@@ -664,11 +614,9 @@ class TrainerXU(SimpleTrainer):
         return input_x, label_x, input_u
 
 
-#WILL BE GETTING INTO THIS ONLY BECAUSE COOP TRAINER IS USING THIS CLASS
 class TrainerX(SimpleTrainer):
     """A base trainer using labeled data only."""
 
-    #OVERWRITTING THE run_epoch FUNCTION FROM THE BASE TRAINER CLASS
     def run_epoch(self):
         self.set_model_mode("train")
         losses = MetricMeter()
@@ -680,9 +628,6 @@ class TrainerX(SimpleTrainer):
         end = time.time()
         for self.batch_idx, batch in enumerate(self.train_loader_x):
             data_time.update(time.time() - end)
-            '''NOW DONT WORRY THAT THE FORWARD_BACKWARD ISNT DEFINED YET, IT'LL BE DEFINED IN THE COOP TRAINER CODE,
-            WHICH IS MEANT TO OVERWRITE THE FUNCTION CODE FROM BASE TRAINER, BUT THAT SINGLE FUNCTION WOULD DO THE FORWARD ITERATION
-            AND THE BACKWARD PROPOGATION AND RETURN A LOSS SUMMARY'''
             loss_summary = self.forward_backward(batch)
             batch_time.update(time.time() - end)
             losses.update(loss_summary)
@@ -690,7 +635,6 @@ class TrainerX(SimpleTrainer):
 
             meet_freq = (self.batch_idx + 1) % self.cfg.TRAIN.PRINT_FREQ == 0
             only_few_batches = self.num_batches < self.cfg.TRAIN.PRINT_FREQ
-            #SO IF THE NUMBER OF BATCHES COMPLETED IS HIT OR TOTAL NUMBER OF BATCHES IS LESS, THEN WE RUN THIS (BASICALLY JUST THE VERBOSE AGAIN)
             if meet_freq or only_few_batches:
                 nb_remain = 0
                 nb_remain += self.num_batches - self.batch_idx - 1
@@ -717,7 +661,6 @@ class TrainerX(SimpleTrainer):
 
             end = time.time()
 
-    #FUNCTION WILL BE USED IN THE COOP TRAINER
     def parse_batch_train(self, batch):
         input = batch["img"]
         label = batch["label"]

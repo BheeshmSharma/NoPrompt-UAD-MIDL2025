@@ -81,16 +81,10 @@ class VPTDeepPromptLearner(nn.Module):
         self.cfg_imsize = cfg.INPUT.SIZE[0]
         self.layers = clip_model.visual.transformer.layers
         
-        #SO THE CONTEXT IS GONNA BE LIKE A 3D STACK (STACKED BY NO OF LAYERS, EACH LAYER HAVING
-        #A 2D CONTEXT OF THE NO OF CONTEXT TOKENS X THE DIM OF THE CONTEXT)
         ctx_vectors = torch.empty(self.layers, self.n_ctx, self.ctx_dim, dtype=self.dtype)
 
-        #So in short, there is a context vector being made for each layer
         for i in range(self.layers):
             nn.init.normal_(ctx_vectors[i], std=0.02)
-            #initialising those layers here
-        
-        #Converting them to a parameter for the bigger model
         self.ctx = nn.Parameter(ctx_vectors)
         
     def forward(self):
@@ -127,27 +121,20 @@ class Transformer_VPTD(nn.Module):
 
     def forward(self, x):
 
-        # x -> [50,32,768]
         ctx = self.ctx_learner()
-        #ctx->[12,10,768]
         ctx = ctx.unsqueeze(2).expand(-1, -1, x.shape[1], -1)
-        #ctx->[12,10,32,768]
         
         joint_attn=[]
         for i in range(self.layers): 
             if i != 0:
-                x = x[:-self.n_ctx, :, :]  #basically removes off the last 10 (kind of like the ctx that we added in previously)
-                #x-> [50,32,768]
-
+                x = x[:-self.n_ctx, :, :] 
+          
            
             
             x = torch.cat([x, ctx[i]], dim=0)
-            #x-> [60,32,768]
             x,attn_weights = self.resblocks[i](x)
-            #x->[60,32,768]
             joint_attn.append(attn_weights)
 
-        #return x,joint_attn
         joint_attn=torch.cat(joint_attn,dim=0)
         return x,joint_attn
 
@@ -166,37 +153,26 @@ class ImageEncoder_VPTD(nn.Module):
         
     def forward(self, x):
  
-        #[32,3,224,224 ] -> BASICALLY 32 IMAGES OF RGB HAVING SIZE 224,224
         x = self.conv1(x)  # shape = [*, width, grid, grid]
-        #[32,768,7,7] -> SAME 32 IMAGES, BUT NOW HAVING 768 CHANNELS AND SIZE OF 7X7
-    
+        
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
-        #[32,49,768] (WHAT HAPPENED IS THE LAST 2 AXIS COLLAPSED TO 49, THEN WE INTERCHANGED THE LAST 2 AXIS)
-
-        # class_embedding is class token.
-
+        
+        
         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
         x = x + self.positional_embedding.to(x.dtype)
-        #[32,50,768] -> SO THAT NOW BASICALLY JUST ADDED ANOTHER ENTRY OF SIZE 768 HERE (GOING TO BE THE CLASS EMBEDDING HERE)
-
+        
         
         x = self.ln_pre(x)
-        #[32,50,768] -> SHAPE REMAINED EXACTLY THE SAME
-
+        
         x = x.permute(1, 0, 2)  # NLD -> LND
-        #[50,32,768]
         x,attn = self.transformer(x)
-        #[60,32,768] -> SIZE INCREASE SHD BE MADLY DUE TO THE CTX LEARNERS
         x = x.permute(1, 0, 2)  # LND -> NLD
-        #[32,60,768]
-
+        
         x = self.ln_post(x[:, 0, :]) # only take class token which is awsome.
-        #[32,768] -> SO FOR EACH OF THE 32 ITEMS IN THE SAMPLE, WE JUST TAKE THE 1ST ONE (TURNS OUT TO BE THE CLASS EMBEDDING)
-       
+        
         x = self.proj(x)
-        #[32,512] -> FINAL OUTPUT FROM VISUAL SCENE [IMAGE FEATURES]
-
+        
         return x
 
 
@@ -205,12 +181,8 @@ class CustomCLIP_VPTD(nn.Module):
         super().__init__()
         temp = CUSTOM_TEMPLATES[cfg.DATASET.NAME]
         prompts = [temp.format(c.replace("_", " ")) for c in classnames]
-        #GOT 100 PROMPTS HERE FOR ALL THE 100 CLASSES [FOR CALTECH101 ITS SIMPLY 'A PHOTO OF A {}']
-
-        #print(f"Prompts: {prompts}")
+        
         prompts = torch.cat([clip.tokenize(p) for p in prompts])
-        #prompts -> [100,77] (since each token is of 77 length -> where we have the first one to be <SOS>, and then the tokens
-        #followed by <EOS> and then 0s until 77 is hit)
         
         clip_model.to(devices)
         prompts = prompts.to(devices)
@@ -218,7 +190,6 @@ class CustomCLIP_VPTD(nn.Module):
             text_features = clip_model.encode_text(prompts)
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-        #text features -> [100,512]
         self.text_features = text_features
         clip_model.to('cpu')
         self.text_features = nn.Parameter(text_features)
@@ -237,11 +208,8 @@ class CustomCLIP_VPTD(nn.Module):
 
         logit_scale = self.logit_scale.exp()
 
-        #img -> [32,512]
-        #text -> [100,512]
         
         logits = logit_scale * image_features @ self.text_features.t()
-        #logits -> [32,100]
         
         return logits
 
@@ -380,9 +348,7 @@ class VPT(TrainerX):
             c+=1
             test_image=i['img'][0]
             if(c==28):
-                #28 is of a ship -> gave somewhat of a better mask than just on one spot
-                #50 is the ying and yang image
-
+        
                 break
         print(c)
 
@@ -399,20 +365,9 @@ class VPT(TrainerX):
         x = x.permute(1, 0, 2)
 
         x1,attn1=self.model.image_encoder.transformer(x)
-        #print('X1 SHAPE',x1.shape)
-        #print('ATTN1 SHAPE',attn1.shape)
-
+        
         clip_model=load_clip_to_cpu(self.cfg).float()
         x2,attn2=clip_model.visual.transformer(x)
-        #print('X2 SHAPE',x2.shape)
-        #print('ATTN1 SHAPE',attn2.shape)
-
-        """  heat_map=map_gen.get_image_attn_mask(test_image[0],attn)
-        attn_mask=map_gen.get_image_attn_mask(test_image,attn)
-
-        print(heat_map.shape)
-        print(attn_mask.shape)
-        """
         
         torch.save(attn1, 'attn_main.pt')
         torch.save(attn2, 'attn_clip.pt')
@@ -426,9 +381,7 @@ class VPT(TrainerX):
             c+=1
             test_image=i['img'][0]
             if(c==28):
-                #28 is of a ship -> gave somewhat of a better mask than just on one spot
-                #50 is the ying and yang image
-
+        
                 break
         print(c)
 

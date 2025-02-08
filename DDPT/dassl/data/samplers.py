@@ -186,7 +186,6 @@ def build_sampler(
     n_domain=0,
     n_ins=16
 ):
-    #SO THESE 2 SAMPLERS COME DIRECTLY FROM THE TORCH.UTILS
     if sampler_type == "RandomSampler":
         return RandomSampler(data_source)
 
@@ -194,7 +193,6 @@ def build_sampler(
         return SequentialSampler(data_source)
 
 
-    #FOR THESE 3 TYPES OF SAMPLERS, WE HAVE DEFINED CLASS TO DO THIS
     elif sampler_type == "RandomDomainSampler":
         return RandomDomainSampler(data_source, batch_size, n_domain)
 

@@ -61,10 +61,8 @@ class Transformer(nn.Module):
     def forward(self, x: torch.Tensor):
         weights_all_blocks = []
  
-        # Go through all the blocks (layers)
         for block in self.resblocks:
             x, weight = block(x)
-            # print(weight.shape)
             weights_all_blocks.append(weight)
  
         return x, torch.stack(weights_all_blocks)

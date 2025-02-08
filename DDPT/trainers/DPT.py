@@ -57,7 +57,7 @@ CUSTOM_TEMPLATES = {
     "ImageNetA": "a photo of a {}.",
     "ImageNetR": "a photo of a {}.",
 
-    #Brain dataset that I have just added
+    #Brain datasets that I have just added
     "BraTs20": "a photo of a {} brain.",
     "BraTs20b": "a photo of a {} brain.",
     "BraTs20c": "a photo of a {} brain.",
@@ -108,11 +108,8 @@ class TextEncoder(nn.Module):
 
     def forward(self, prompts, tokenized_prompts):
         
-        #prompts->[100,77,512] (these are what have the learnable ctx vectors)
-        #tokenized_prompts ->[100,77] -> now these are the prompts before learners and have XXXX
        
         x = prompts + self.positional_embedding.type(self.dtype)
-        #x -> [100,77,512]
        
 
         x=x.permute(1,0,2)
@@ -120,18 +117,11 @@ class TextEncoder(nn.Module):
        
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = self.ln_final(x).type(self.dtype)
-        #x->[100,77,512]
-
-        # x.shape = [batch_size, n_ctx, transformer.width] hmmmm what??
+   
+        # x.shape = [batch_size, n_ctx, transformer.width] 
 
         # take features from the eot embedding (eot_token is the highest number in each sequence)
         x = x[torch.arange(x.shape[0]), tokenized_prompts.argmax(dim=-1)] @ self.text_projection
-        #so in this step kinda like were taking only a few features after doing the linear layer, and then passing through the projection layer
-
-        #x-> [100,512]
-
-        '''IN SHORT WHAT HAPPENS IN THIS TEXT ENCODER IS THAT THE PROMPTS (LEARNABLE) ARE PASSED THROUGH THE CLIP TEXT TRANSFORMER, AND WE CHOOSE
-        ONLY A PART OF THE OUTPUT, BASED ON THE TOKENIZED PROMPTS (TOKENS OF 'X X X X X CLS.') , WHICH WE THEN PASS THROUGH THE PROJECTION LAYER'''
         return x
 
 
@@ -141,20 +131,17 @@ class PromptLearner(nn.Module):
         if(label):
             n_cls=1
             classnames=[label]
-            print('PROMPT LEARNER', classnames)
         else:
-            n_cls = len(classnames)                             #p self explanatory
-        n_ctx = cfg.TRAINER.COOP.N_CTX                      #'M' in the paper
-        ctx_init = cfg.TRAINER.COOP.CTX_INIT                # Going to be ' ' in our case
-        # tem_init = CUSTOM_TEMPLATES[cfg.DATASET.NAME]
+            n_cls = len(classnames)                             
+        n_ctx = cfg.TRAINER.COOP.N_CTX                      
+        ctx_init = cfg.TRAINER.COOP.CTX_INIT               
         tem_init = False
         dtype = clip_model.dtype
-        ctx_dim = clip_model.ln_final.weight.shape[0]       #well see soon what this does
-        clip_imsize = clip_model.visual.input_resolution    #image input (224)
-        cfg_imsize = cfg.INPUT.SIZE[0]                      #224
+        ctx_dim = clip_model.ln_final.weight.shape[0]      
+        clip_imsize = clip_model.visual.input_resolution   
+        cfg_imsize = cfg.INPUT.SIZE[0]                     
         assert cfg_imsize == clip_imsize, f"cfg_imsize ({cfg_imsize}) must equal to clip_imsize ({clip_imsize})"
 
-        #[NOT GOING TO BE OUR CASE]
         if ctx_init:
             # use given words to initialize context vectors 
             ctx_init = ctx_init.replace("_", " ")
@@ -165,7 +152,6 @@ class PromptLearner(nn.Module):
             ctx_vectors = embedding[0, 1 : 1 + n_ctx, :]
             prompt_prefix = ctx_init
 
-        #NOPE AGAIN
         elif tem_init:     
             target_nctx = n_ctx
             ctx_init = tem_init[:-1]
@@ -188,86 +174,46 @@ class PromptLearner(nn.Module):
             tmp = torch.empty(target_nctx-n_ctx, ctx_dim, dtype=dtype)
             nn.init.normal_(tmp, std=0.02)
             ctx_vectors = torch.cat([embedding[0, 1 : 1 + n_ctx, :], tmp], dim=0)
-            # ctx_vectors = embedding[0, 1 : 1 + n_ctx, :]
             prompt_prefix = " ".join(ctx_init)+" "+" ".join(["X"]*(target_nctx-n_ctx))
             n_ctx = target_nctx
 
-        # random initialization  [THHIS OVER HERE IS THE REAL DEAL SIR]
         else:
-           
-
-            #NOW WE WOULD DO THIS IF WE CLASS SPECIFIC CONTEXT, WHICH IS NOT THE CASE FOR US, SO WE MOVE AHEAD]
             if cfg.TRAINER.COOP.CSC:            
                 print("Initializing class-specific contexts")
                 ctx_vectors = torch.empty(n_cls, n_ctx, ctx_dim, dtype=dtype)
-            #HERE IS FOR THE UNIFIED CONTEXT
             else:
                 ctx_vectors = torch.empty(n_ctx, ctx_dim, dtype=dtype)
-                #ctx vectors -> [16,512]
             nn.init.normal_(ctx_vectors, std=0.02)
             prompt_prefix = " ".join(["X"] * n_ctx)
-            #prompt_prefix -> only gonna be 16 X followed by _ in the string
 
-        self.ctx = nn.Parameter(ctx_vectors)  # to be optimized
-        #so this part has nothing to do with the classnames we set till now, its completely randomly initialized
-
+        self.ctx = nn.Parameter(ctx_vectors) 
         classnames = [name.replace("_", " ") for name in classnames]
-        #we have 100 classnames like face, leopard etc
         name_lens = [len(_tokenizer.encode(name)) for name in classnames]
-        #not used here, but just a list of the length of the encodings of each name
         prompts = [prompt_prefix + " " + name + "." for name in classnames]
-        #so basically its like a big list of items, wheres these items are basically those 16 Xs followed by the class and then '.'
-        #something like ['X X X X X X X X X X X X X X X X face.'] and 100 elements like this
         
 
         tokenized_prompts = torch.cat([clip.tokenize(p) for p in prompts]).to(devices)
-        #so basically just tokenizes the above prompts by doing this
-            #-> adds a <SOS> token first
-            #-> then we have 343 for the number of X
-            #-> then we have the number of tokens used for the encoding of the word
-            #-> then ending it up with the <EOS> token
-        #tokenized_prompts -> [100,77]  (for each class)
         with torch.no_grad():
             embedding = clip_model.token_embedding(tokenized_prompts).type(dtype)
-            #so somehow using the above tokenized embeddings, we just get these embeddings
-            #embeddings -> #[100,77,512]   (77 token long, 512 for each token)
-
-        # These token vectors will be saved when in save_model(),
-        # but they should be ignored in load_model() as we want to use
-        # those computed using the current class names
         self.register_buffer("token_prefix", embedding[:, :1, :])  # SOS
-        #now that part of the embedding chosen is gonna be [100,512] -> more like the 1st token for each of the 100 classes, hence the SOS
         self.register_buffer("token_suffix", embedding[:, 1 + n_ctx :, :])  # CLS, EOS
-        #So this is going to have the CLS, EOS and the remaining of the 0s
-
-        '''TO EXPLAIN IN SHORT WE DID IN THE TOP HERE
-        1) Make tokenized_prompts to have the tokenized form of ['X X X X X cls.'] -> [100,77]
-        2) Make embedding out of that ->[100,77,512]
-        3) Now from these embeddings, just take out what we think is the <SOS>, <CLS> and <EOS>
-        4) Append these to the ctx (learnable context vectors) according to the rule
-        '''
 
         self.n_cls = n_cls    #100
         self.n_ctx = n_ctx    #16
-        self.tokenized_prompts = tokenized_prompts  #SO AGAIN THIS IS FOR ALL THE CLASS NAMES THAT WE HAVE [100,77]
-        self.name_lens = name_lens   #LIST OF 100 ELEMENTS HAVING THE LENGTH OF EACH EMBEDDING
-        self.class_token_position = cfg.TRAINER.COOP.CLASS_TOKEN_POSITION if not tem_init else "template"  #'END' IN OUR CASE
+        self.tokenized_prompts = tokenized_prompts  
+        self.name_lens = name_lens   #
+        self.class_token_position = cfg.TRAINER.COOP.CLASS_TOKEN_POSITION if not tem_init else "template"  
 
     def forward(self):
         ctx = self.ctx  
-        #THE RANDOMLY INIT -> [16,512]
+       
         if ctx.dim() == 2:
             ctx = ctx.unsqueeze(0).expand(self.n_cls, -1, -1)
-            #gonna be [100,16,512]
-
+           
         prefix = self.token_prefix
-        #prefix -> [100,1,512] -> the SOS embeddings for all the 100 classes
         suffix = self.token_suffix
-        #suffix -> [100,60,512 ] -> the CLS+EOS embeddings for all the 100 classes
-
-        #put them all together -> [100,77,512]
-
-        if self.class_token_position == "end":   #this itself
+        
+        if self.class_token_position == "end":   
             prompts = torch.cat(
                 [
                     prefix,  # (n_cls, 1, dim)
@@ -277,9 +223,6 @@ class PromptLearner(nn.Module):
                 dim=1,
             )
         
-        #so more like the whole point of doing this, is to not have the X X X X as the context, but 
-        #rather these context vectors which are trainable. The prefix and the suffix are gonna be 
-        #more or less the same
             
         elif self.class_token_position == "middle":
             half_n_ctx = self.n_ctx // 2
@@ -350,10 +293,6 @@ class PromptLearner(nn.Module):
         else:
             raise ValueError
 
-        #prompts -> [100,77,512]  -> basically for each of the 100 classes, we have 77 token long which is gonna be 512 embedding long
-
-        #so to put it in short, for each of the 100 classes, were going to be having the prompt such that its of shape [77,512], where 1st -> <SOS>
-        # next 16 -> the learnable tokens  [PRETTY MUCH THE PROMPT LEARNER], and the remaining 60 -> <CLS> <EOS> and ending up with 0s
         return prompts
 
 
@@ -390,27 +329,23 @@ class VPTDeepPromptLearner(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
         # hyper param
-        self.n_ctx = cfg.TRAINER.VPT.N_CTX                              #10
+        self.n_ctx = cfg.TRAINER.VPT.N_CTX                              
         self.dtype = clip_model.dtype        
-        self.ctx_dim = clip_model.visual.conv1.out_channels             #768
-        self.clip_imsize = clip_model.visual.input_resolution           #224
-        self.cfg_imsize = cfg.INPUT.SIZE[0]                             #224
-        self.layers = clip_model.visual.transformer.layers              #12
-        self.bottom_limit = cfg.TRAINER.TOPDOWN_SECOVPT.BOTTOMLIMIT - 1 #11
-        self.meta_net_num = self.layers - self.bottom_limit             #1
+        self.ctx_dim = clip_model.visual.conv1.out_channels            
+        self.clip_imsize = clip_model.visual.input_resolution           
+        self.cfg_imsize = cfg.INPUT.SIZE[0]                             
+        self.layers = clip_model.visual.transformer.layers              
+        self.bottom_limit = cfg.TRAINER.TOPDOWN_SECOVPT.BOTTOMLIMIT - 1 
+        self.meta_net_num = self.layers - self.bottom_limit             
         
-        vis_dim = clip_model.visual.output_dim              #512
+        vis_dim = clip_model.visual.output_dim             
         
         ctx_vectors = torch.empty(self.bottom_limit, self.n_ctx, self.ctx_dim, dtype=self.dtype)
-        #ctx_vectors - > [11,10,768]
-
-        #so like in the original VPT it was [12,10,768] -> the other layer will be coming up later
         nn.init.normal_(ctx_vectors, std=0.02)
         self.ctx = nn.Parameter(ctx_vectors)
         
     def forward(self, batch_size):
         ctx = self.ctx.unsqueeze(0).expand(batch_size, -1, -1, -1) # batch layers n_ctx feature 
-        #so if 32 was fed into the learner, we would be getting [32,11,10,768]
         return ctx
 
 class ProjLearner(nn.Module):
@@ -423,64 +358,51 @@ class ProjLearner(nn.Module):
             x = x @ self.proj
         return x
     
-
-#SO NOW HERE THE ATTENTION MECHANISM HAS BEEN CODED OUT ON ITS OWN RATHER THAN TRYING TO GET IT FROM THE CLIP.py FILE
 class Attention(nn.Module):
     def __init__(self, clip_model, min=0.02):
         super().__init__()
-        # self.bias = 
         self.min = min
         self.dtype = clip_model.dtype
-        self.ctx_dim = clip_model.visual.conv1.out_channels # 768
-        self.clip_imsize = clip_model.visual.input_resolution  #224
-        self.kmlp = nn.Linear(self.ctx_dim, 32,bias=False, dtype=clip_model.dtype) #[768,32]
+        self.ctx_dim = clip_model.visual.conv1.out_channels 
+        self.clip_imsize = clip_model.visual.input_resolution  
+        self.kmlp = nn.Linear(self.ctx_dim, 32,bias=False, dtype=clip_model.dtype)
        
-        self.qmlp = nn.Linear(self.ctx_dim, 32,bias=False, dtype=clip_model.dtype) #[768,32]
-        self.vmlp = nn.Linear(self.ctx_dim, self.ctx_dim,bias=False, dtype=clip_model.dtype)  #[768,768]
+        self.qmlp = nn.Linear(self.ctx_dim, 32,bias=False, dtype=clip_model.dtype) 
+        self.vmlp = nn.Linear(self.ctx_dim, self.ctx_dim,bias=False, dtype=clip_model.dtype) 
         
     def forward(self, q, k, v):
-        #q -> [10,32,768]
-        #k,v -> [60,32,768]
         
         q = q.permute(1,0,2); k=k.permute(1,0,2); v=v.permute(1,0,2)
         q = self.qmlp(q); k = self.kmlp(k)
         u = torch.bmm(q, k.transpose(1,2))
-        #q-> [32,10,32] k->[32,60,32] u->[32,10,60]
-
+        
         u = u / (math.sqrt(q.shape[-1]))
         
         attn_map = F.softmax(u, dim=-1)
-        #attn_map ->[32,10,60]
         output = torch.bmm(attn_map, v)
         output = self.vmlp(output)
-        #output -> [32,10,768]
         
         return output.permute(1,0,2), attn_map
     
 class CAVPT(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
-        self.n_ctx = cfg.TRAINER.VPT.N_CTX                     #10
+        self.n_ctx = cfg.TRAINER.VPT.N_CTX
         self.dtype = clip_model.dtype
-        self.ctx_dim = clip_model.visual.conv1.out_channels    #768
-        self.clip_imsize = clip_model.visual.input_resolution  #224
-        self.cfg_imsize = cfg.INPUT.SIZE[0]                    #224
-        self.layers = clip_model.visual.transformer.layers     #12
+        self.ctx_dim = clip_model.visual.conv1.out_channels   
+        self.clip_imsize = clip_model.visual.input_resolution 
+        self.cfg_imsize = cfg.INPUT.SIZE[0]                    
+        self.layers = clip_model.visual.transformer.layers     
 
-        #10
         self.class_prompt_num = cfg.TRAINER.SELECTED_COVPT.CPN if cfg.TRAINER.SELECTED_COVPT.CPN < len(classnames) else len(classnames)
         
-        #11
         self.bottom_limit = cfg.TRAINER.TOPDOWN_SECOVPT.BOTTOMLIMIT - 1 
         
-        #1
         self.meta_net_num = self.layers - self.bottom_limit
         
-        vis_dim = clip_model.visual.output_dim           #512
+        vis_dim = clip_model.visual.output_dim          
 
 
-        #basically going to be a module now having just one linear layer (cos met_net_num = 1)
-        #each linear having -> [512,768]
         self.meta_nets = nn.ModuleList([nn.Linear(vis_dim, self.ctx_dim)for _ in range(self.layers - self.bottom_limit)])
         
         if cfg.TRAINER.COOP.PREC == 'fp16':
@@ -488,56 +410,31 @@ class CAVPT(nn.Module):
                 self.meta_nets[i].half()
     
         
-        '''IF WE'RE NOT CHANGING THE INITIAL CONFIGURATION OF THE PROGRAM, i WILL BE 1 ITSELF, AND WE'LL HAVE ONLY 1 ELEMENT IN ALL THESE MODULE LISTS, HENCE NO POINT OF IT AS SUCH'''
-
-        #creating a module having one attention layer (NOTHING TO DO WITH CLIP, BUT JUST FOR THE SIZES)
         self.attns = nn.ModuleList([Attention(clip_model) for _ in range(self.layers-self.bottom_limit)])
 
-        #can just say similarly for these 2 too
-        #LayerNorm [768]
         self.lns = nn.ModuleList([nn.LayerNorm(self.ctx_dim) for _ in range(self.layers - self.bottom_limit)])
-        #Linear [768,100]
         self.classfiers = nn.ModuleList([nn.Linear(self.ctx_dim, len(classnames), bias=False) for _ in range(self.layers - self.bottom_limit)])
-        # self.prompt_linear = nn.ModuleList([nn.Linear(self.ctx_dim, self.ctx_dim)for _ in range(self.layers - self.bottom_limit)])
         self.lns2 = nn.ModuleList([nn.LayerNorm(self.ctx_dim) for _ in range(self.layers - self.bottom_limit)])
 
    
         ctx_vectors = torch.empty(self.layers - self.bottom_limit, 10, self.ctx_dim, dtype=self.dtype)
-        '''NOTE THAT THESE VECTORS WERE MADE JUST FOR THE CAVPT PART, AND SINCE THE IMAGE HAS BEEN THROUGH 11 (DEAFULT) LAYERS ALREADY WITH THE VPT CONTEXT,
-        THE CAVPT CONTEXT ONLY NEEDS TO HELP FOR ANOTHER 1 LAYER'''
         nn.init.normal_(ctx_vectors, std=0.02)
         self.ctx = nn.Parameter(ctx_vectors)
         
     def forward(self, class_token, class_prompt, i):
         class_token = class_token.detach()
-        '''CLASS TOKEN IS BASICALLY THE IMAGE FEATURES ITSELF AND CLASS PROMPT IS THE TEXT FEATURE'''
-
-        #class token -> [50,32,768]  image features ready for the next layer cavpt layer of transformer
-        #class prompt -> [32,10,512]  #best 10 text features
-
-        # class_token = self.ctx[i].unsqueeze(1).expand(-1, class_token.shape[1], -1)
         
         class_prompt = self.meta_nets[i](class_prompt).permute(1, 0, 2)
-        #class prompt -> [10,32,768]
-        '''PASSING THE TEXT FEATURE THROUGH SOME LINEARS, TURNS OUT TO GET THE SAME SHAPE AS THE CLASS TOKEN'''
-        
-        '''TO THE IMAGE WE PUT IN THE ONLY CTX LAYER AND THEN CHANGE SHAPE A LITTLE'''
         class_token = torch.cat([class_token, self.ctx[i].unsqueeze(1).expand(-1, class_token.shape[1], -1)])
-        #class token -> [60,32,768]
-
+        
         x = class_prompt
         
-        '''WHAT WE DO NOW IS THAT WE PASS THIS NEW IMAGE WITH CLASS CONTEXT, AND THE TEXT FEATURES IN THE ATTENTION LAYER, TO GET THE NEW IMAGE FEATURES'''
         class_prompt, attn_map = self.attns[i](class_prompt, class_token, class_token)
-        #class_prompt -> [10,32,768]
         class_prompt4logits = self.lns[i](class_prompt)
-        #class_prompt4logits -> [10,32,768]
         
         logits = self.classfiers[i](class_prompt4logits)
         class_prompt = self.lns2[i](class_prompt + x)
 
-        #logits -> [10,32,100]  class_prompt-> [10,32,768]
-        
         return class_prompt, logits, attn_map
         
     
@@ -559,64 +456,39 @@ class Transformer_VPTD(nn.Module):
 
         self.ctx_learner = VPTDeepPromptLearner(cfg, classnames, clip_model)
 
-        ### THIS PART GOT ADDED IN, REMAINING WAS JUST SAME FROM VLP 
         self.class_prompt_num = cfg.TRAINER.SELECTED_COVPT.CPN if cfg.TRAINER.SELECTED_COVPT.CPN < len(classnames) else len(classnames)
-        #10
         self.n_ctx = self.n_ctx
-        #10
         self.bottom_limit = cfg.TRAINER.TOPDOWN_SECOVPT.BOTTOMLIMIT - 1 
-        #11
         
         self.extractor = CAVPT(cfg, classnames, clip_model).half()
-        #JUST MADE A CAVPT OBJECT
         
 
     def forward(self, x, text_feature, need_attn=False):
 
-        #x ->
-        #text_feature ->
 
         ctx = self.ctx_learner(x.shape[1]) # batch layers n_ctx feature
-        #ctx be [32,11,10,768]
         ctx = ctx.permute(1, 2, 0, 3)
-        #ctx -> [11,10,32,768]
 
-        # top_ctx = top_ctx.permute(1, 2, 0, 3)
         
         n_ctx = self.n_ctx   
-        #10
-        
-        # ctx = bottom_ctx
         
         for i in range(self.bottom_limit):    #for loop goes on 11 times
-            # print(ctx[i].shape, x.shape)
-            '''SAME WORKING AS IN VPT -> PUT THE CTX VECTORS IN THE END, PASS THROUGH THE RESBLOCKS (ATTENTION)
-            AND THEN FINALLY REMOVE THE LAST 10 FOR THE NEXT ROUND'''
             x = torch.cat([x, ctx[i]], dim=0)
-            #[60,32,768]
             x = self.resblocks[i](x)
             x = x[:-n_ctx, :, :]
-            # print("bottom", x.shape)
-        
-        #x->[50,32,768]
             
         n_ctx = self.class_prompt_num
-        #10
         
         layer_logits = []
         
-        for i in range(self.layers-self.bottom_limit):   #LOOP RUNS ONCE
+        for i in range(self.layers-self.bottom_limit):  
             class_token = x
-            # class_prompt = ctx[i][self.n_ctx:, :, :] # class_prompt_num, batch_size, feature.
-            '''SO WHAT WE'RE DOING IS PASSING THE PRE-FINAL (11TH) LAYER X ALONG WITH THE TEXT FEATURE IN THE CAVPT PART  [i is gonna be 1 itself]'''
             class_prompt, layer_logit, attn_map = self.extractor(class_token, text_feature, i)
             
 
             layer_logits.append(layer_logit.unsqueeze(0))
-            #gonna be a list of the layer_logits
 
             x = torch.cat([x, class_prompt], dim=0)
-            '''now instead of putting in some ctx[i], we're putting in the class prompt which came from the CAVPT and then do same process'''
             if(need_attn):
                 attn=self.resblocks[i+self.bottom_limit(x,True)]
                 return attn
@@ -626,12 +498,6 @@ class Transformer_VPTD(nn.Module):
                 if n_ctx != 0:
                     x = x[:-n_ctx, :, :]
             
-        '''FINALLY GIVING BACK THE X AFTER HAVING PASSED IT THROUGH ALL THE LAYERS OF THE VISION ENCODER BUT LIKE THIS
-        1) 11 OF THOSE LAYERS WERE DONE USING THE CONTEXT FROM THE CONTEXT LEARNER (ctx)
-        2) LAST ONE WAS DONE USING THE CLASS PROMPT FROM THE CAVPT
-        
-        IN THIS CASE THE LAYER_LOGITS WILL JUST BE A SINGLE ELEMENT LONG, HAVING THE LAYER LOGITS OF THE LAST LAYER
-        '''
         
         return x, layer_logits, attn_map
 
@@ -649,43 +515,25 @@ class ImageEncoder_VPTD(nn.Module):
         self.proj = ProjLearner(clip_model)
         
     def forward(self, x, text_feature):
-        '''SO THE WHOLE IMAGE ALONG WITH THE TOP 10 TEXT FEATURES COME IN NOW'''
         x = self.conv1(x)  # shape = [*, width, grid, grid]
-        #x -> [32,768,7,7]
-       
+        
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
-        #x-> [32,49,768]
-
+        
         # class_embedding is class token.
-        '''adding the class token here'''
         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
-        #x -> [32,50,768]
         x = x + self.positional_embedding.to(x.dtype)
  
         x = self.ln_pre(x)
-        #x-> [32,50,768]
         
 
         x = x.permute(1, 0, 2)  # NLD -> LND
-        #x -> [50,32,768]
         x, layer_logits, attn_map= self.transformer(x, text_feature)
-        #x->[50,32,768]
-        #layer_logits -> list containing an element of [1,10,32,100]
-        '''THE TEXT FEATURES [TOP-10] WILL ONLY BE USED BY THE CAVPT MECHANISM'''
         x = x.permute(1, 0, 2)  # LND -> NLD
-        #x -> [32,50,768]
-
-        '''SO THIS X CAME OUT FROM ALL THE LAYERS OF THE IMAGE ENCODER, SOMETIMES WENT IN WITH THE LEARNABLE CONTEXT, SOMETIMES WITH THE CAVPT CONTEXT'''
-       
-        '''AFTER ALL THESE LAYERS, WE JUST TAKE UP THE CLASS TOKEN FROM THE FEATURES, AND THEN PASS THAT ALONG THE PROJECTION LAYER'''
         x = self.ln_post(x[:, 0, :]) # only take class token which is awsome.
-        #x-> [32,768]
         
         x = self.proj(x)
-        #x->[32,512]
-
-        '''RETURING BACK X AND THE LIST OF LAYER_LOGITS FROM THE TRANSFORMER'''
+        
         return x, layer_logits,attn_map
 
 
@@ -693,23 +541,16 @@ class CustomCLIP_Selected_CoVPTDeep(nn.Module):
     def __init__(self, cfg, classnames, clip_model, devices):
         super().__init__()
         self.class_prompt_num = cfg.TRAINER.SELECTED_COVPT.CPN if cfg.TRAINER.SELECTED_COVPT.CPN < len(classnames) else len(classnames)
-        #10
         prompts = []
-        # for temp in IMAGENET_TEMPLATES_SELECT:
         temp = CUSTOM_TEMPLATES[cfg.DATASET.NAME]
         prompts += [temp.format(c.replace("_", " ")) for c in classnames]
-        #so at this point, prompts is a 100 el long list of prompts like 'a photo of a {}' with the classname
         prompts = torch.cat([clip.tokenize(p) for p in prompts])
-        #prompts -> [100,77], so where each of the 100 elements now get tokenized to 77 long list, where the first el will be SOS, and 
-        #then the encoding for the prompt (majorly the tokens itself) -> followed by the cls and then the <EOS>, remaining gon be 0s
-       
+        
         clip_model.to(devices)
         prompts = prompts.to(devices)
         self.devices=devices
         with torch.no_grad():
             text_features = clip_model.encode_text(prompts)
-            #now pass in these text tokens into clip text encoder -> gives out features for the text
-            #text_features -> [100,512]
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
         self.text_features = text_features
@@ -722,39 +563,23 @@ class CustomCLIP_Selected_CoVPTDeep(nn.Module):
         self.prompt_learner = PromptLearner(cfg, classnames, clip_model)
         
         self.tokenized_prompts = self.prompt_learner.tokenized_prompts
-        #this is gonna be the 77 long prompt for each class, but before embedding, so [100,77], but have the 'X X X ' instead of the learner vector
-
-        # visual (going to be defining 2 image encoders (VPTD and clip -> mainly for ground test))
         self.image_encoder = ImageEncoder_VPTD(cfg, classnames, clip_model)
         self.zeroshot_clip_image_encoder = clip_model.visual
-        # visual end (going to defining 1 itself)
         self.text_encoder = TextEncoder(clip_model)
         self.logit_scale = clip_model.logit_scale
         self.dtype = clip_model.dtype
 
     def forward(self, image):
-        '''So the first part in this forward is to get to know the top-10 text features which are in line with the image'''
-        '''and those indices be stored in indices'''
-        #image -> [32,3,224,224]
         image = image.to(next(self.image_encoder.parameters()).device)
-        #what this does is sets the image to either cpu or gpu depending on what the image encoder was set to
-        #size gon remain the same [32,3,224,224]
         with torch.no_grad():
             zeroshotclip_image_feature = self.zeroshot_clip_image_encoder(image.type(self.dtype))
             zeroshotclip_image_feature = zeroshotclip_image_feature / zeroshotclip_image_feature.norm(dim=-1, keepdim=True)
-            #zsclip -> [32,512]
             
             logit_scale = self.logit_scale.exp()
             logits = logit_scale * zeroshotclip_image_feature @ self.text_features.t()
-            #now then multiplying it with the text features, we get the logits
-            #logits -> [32,100]
             _, indices = torch.sort(logits, descending=True)
-            #so now indices is going to have the indices of the logits sorted in descending
             
             indices = indices[:, :self.class_prompt_num]
-            #and now we choose only the top 10 of this for every image in the batch
-            
-            # mask = indices==label.unsqueeze(0).expand()
             selected_text_features = self.text_features[indices]
         
         condition=False
@@ -778,43 +603,22 @@ class CustomCLIP_Selected_CoVPTDeep(nn.Module):
           text_features = self.text_encoder(prompts, tokenized_prompts)
         
         text_features_norm = text_features / text_features.norm(dim=-1, keepdim=True)
-        #[100,512]
-
-        '''NOW TO GET THE IMAGE FEATURES FROM THE IMAGE ENCODER (VPTD) TO WHICH WE'LL PASS IN 2 THINGS
-        1) IMAGE [32,3,224,224]
-        2) TOP 10 TEXT FEATURES [10,512]
-        '''
         image_features, layer_logits, attn_map = self.image_encoder(image.type(self.dtype), text_features[indices])
         
 
-        #ONCE WE HAVE THE FINAL IMAGE FEATURES, WE JUST MULTIPLY IT WITH THE TEXT FEATURES (FULL 100, NOT TOP 10)
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         logit_scale = self.logit_scale.exp()
 
-        #THIS ONE IS FOR VPT+COOP
-        #print('Image features', image_features.shape)
-        #print('Text features', text_features_norm.shape)
         logits = logit_scale * image_features @ text_features_norm.t()
         
-        #THIS IS ONLY FOR COOP
         logits1 = logit_scale * zeroshotclip_image_feature @ text_features_norm.t()
-        # loss1 = F.mse_loss(text_features, self.text_features)
-        #THIS IS ONLY FOR VPT
         logits2 = logit_scale * image_features @ self.text_features.t()
 
-        #logits, logits1, logits2 -> [32,100]
         
-        #print(logits.shape,'LOGITS SHAPE')
-
         return logits, layer_logits, indices, logits1, logits2 , attn_map
     
 
-    '''GOAL OF THIS FUNCTION IS TO USE IT FOR THE TEST PART ONLY (WHERE WE'D LIKE TO PASS IN THE LABEL OF THE CLASS TOO) -> NICELY DONE
-    USING THE label=None, AND ALSO WELL APPROACHED IN THE get_heatmap FUNCTION'''
     def inference(self, image, label=None):
-        '''So the first part in this forward is to get to know the top-10 text features which are in line with the image'''
-        '''and those indices be stored in indices'''
-        #image -> [32,3,224,224]
         image = image.to(next(self.image_encoder.parameters()).device)      
         
         '''HAND CRAFTER PROMPT INFERNENCE'''
@@ -825,53 +629,34 @@ class CustomCLIP_Selected_CoVPTDeep(nn.Module):
           prompts=[temp.format(label)]
           prompts = torch.cat([clip.tokenize(p) for p in prompts]).to(self.devices)
           
-          #print(prompts.shape)
           text_features = self.clip_model.encode_text(prompts)
           
           text_features_norm = text_features / text_features.norm(dim=-1, keepdim=True)
   
-          #print('text features',text_features.shape)
           
           image_features, layer_logits, attn_map = self.image_encoder(image.type(self.dtype), text_features.unsqueeze(0))
         
         else:
           '''TRAINED PROMPT INFERENCE'''
-          #print('INFERENCE USING RANDOM PROMPTS')          
           prompts = self.prompt_learner()
-          #[2,77,512]
           tokenized_prompts = self.tokenized_prompts
-          #[2,77]
           text_features = self.text_encoder(prompts, tokenized_prompts)
-          #[2,512]
           
           text_features_norm = text_features / text_features.norm(dim=-1, keepdim=True)
         
         
-          #SO BASICALLY PASSING IN ONLY THE TEXT FEATURE OF THE TUMOR TEXT, BUT NEED TO BE A 3D VECTOR, SO UNSQUEEZING AS WELL
-          #image_features, layer_logits, attn_map = self.image_encoder(image.type(self.dtype), text_features[1].unsqueeze(0).unsqueeze(0))
           image_features, layer_logits, attn_map = self.image_encoder(image.type(self.dtype), text_features.unsqueeze(0))
         
         
-        '''COMMON PART STARTS AFTER THIS'''
         
-        #image_features->[32,512]
-        #layer_logits -> list having one element of [1,10,32,100]
-
-        #ONCE WE HAVE THE FINAL IMAGE FEATURES, WE JUST MULTIPLY IT WITH THE TEXT FEATURES (FULL 100, NOT TOP 10)
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         
         
         logit_scale = self.logit_scale.exp()
         
-        #print('Image features', image_features.shape)
-        #print('Text features', text_features_norm.shape)
         logits = logit_scale * image_features @ text_features_norm.t()
-        #print('INFERENCE LOGITS',logits.shape)
-
-        #print(logits.shape,'LOGITS SHAPE')
         return logits
     
-# end
 
 
 
@@ -913,13 +698,6 @@ class DPT(TrainerX):
 
         print("Turning off gradients in both the image and the text encoder")
         
-        '''
-        for name, param in self.model.named_parameters():
-            if "image_encoder.transformer.ctx_learner" not in name and 'extractor' not in name and "prompt_learner" not in name:
-                param.requires_grad_(False)
-            else:
-                print(name)
-        '''
         
         
 
@@ -950,8 +728,6 @@ class DPT(TrainerX):
 
         self.scaler = GradScaler() if cfg.TRAINER.COOP.PREC == "amp" else None
 
-        # Note that multi-gpu training could be slow because CLIP's size is
-        # big, which slows down the copy operation in DataParallel
         device_count = torch.cuda.device_count()
         if device_count > 1:
             print(f"Multiple GPUs detected (n_gpus={device_count}), use all of them!")
@@ -959,12 +735,8 @@ class DPT(TrainerX):
 
     def forward_backward(self, batch):
         image, label = self.parse_batch_train(batch)
-        #print('img shape ',label.shape)
-        #image -> [32,3,224,224]
-        #label -> [32]
         prec = self.cfg.TRAINER.COOP.PREC
 
-        #NOT GONNA BE OUR CASE
         if prec == "amp":
             with autocast():
                 output = self.model.forward(image)
@@ -974,11 +746,9 @@ class DPT(TrainerX):
             self.scaler.step(self.optim)
             self.scaler.update()
        
-        #OUR DEAL RIGHT HERE LAD
         else:
             
-            real_label = label
-            
+            real_label = label            
             
             output=self.model.forward(image)[0]
             
@@ -995,8 +765,6 @@ class DPT(TrainerX):
             else:
                 loss = F.cross_entropy(output, label)
 
-            '''THIS SECTION ONWARDS, THEY ARE ALSO ACCOUNTING FOR ANOTHER LOSS FUNCTION, WHICH GETS ADDED TO THE LOSS FUNCTION ABOVE
-            NOT REALLY REQUIRED AT THIS POINT OF TIME, SO NOT GETTING DEEPER INTO THIS DRILL'''
             
             layers = len(layer_logits)
             layer_logits = torch.cat(layer_logits, dim=0).permute(2, 0, 1, 3).reshape([-1, len(self.classnames)]) # batch, layer, class_prompt_num, class_num
@@ -1258,38 +1026,10 @@ class DPT(TrainerX):
                 logits=self.model.inference(torch.unsqueeze(img, dim=0), 'Tumour')
                 process_image(img, impath, folder_paths,dataset=self.cfg.DATASET.NAME,input_size=self.cfg.INPUT.SIZE,mis_pred=False) 
 
-                '''
-                if self.cfg.EVAL.CLASSIFY:
-                    #this is just calculated to see for the classification
-                    out = self.model(torch.unsqueeze(img, dim=0))
-                    logits=out[0]
-                    if logits[0][1] > logits[0][0]:
-                        healthy.append(impath)
-                        logits=self.model.inference(torch.unsqueeze(img, dim=0), 'Tumour')  #Re-running again so we are sure that only the Tumour class prompt is sent in
-                        if label==1:
-                            process_image(img, impath, folder_paths,dataset=self.cfg.DATASET.NAME,input_size=self.cfg.INPUT.SIZE,mis_pred=False) 
-                        else:
-                            process_image(img, impath, folder_paths,dataset=self.cfg.DATASET.NAME,input_size=self.cfg.INPUT.SIZE,mis_pred=True) 
-                    # REMOVE THESE 2 LINES
-                    else:
-                        unhealthy.append(impath)
-
-                elif label == 1:
-                   logits = self.model.inference(torch.unsqueeze(img, dim=0), 'Tumour')
-                   process_image(img, impath, folder_paths,dataset=self.cfg.DATASET.NAME,input_size=self.cfg.INPUT.SIZE,mis_pred=False)
-                '''
-
-            '''
-            data = {"healthy": healthy, "unhealthy": unhealthy}
-
-            with open("lists.json", "w") as f:
-                json.dump(data, f)    
-            '''
-
+            
             batch_num+=1
             progress_bar.update(1)
-            #print(f'BATCHES DONE {batch_num}/{num_batches}')
-
+            
         print('HEALTHY IMAGES', len(healthy))
         print('UNHEALTHY IMAGES', len(unhealthy))
         

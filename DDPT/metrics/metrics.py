@@ -62,14 +62,11 @@ def apply_2d_median_filter(pred, kernelsize=5):
   
 
 
-#THIS FUNCTION EXTRACTS THE ATTENTION AND THE MASK TENSORS, AND THEN PASSES IT THROUGH THE DICE FUNCTION TO GET THE FINAL VALUE FOR THE 2 TENSORS
 def eval_metrics(file_name,folder,ground_threshold,median=None):
 
-  #file_name=impath.split('/')[-1].split('.')[0]
   
   transform = transforms.ToTensor()
   
-  #mask_file=f'inference/{folder}/mask/{file_name}.png'
   mask_file=f'inference/{folder}/mask/{file_name}'
    
   mask = Image.open(mask_file)
@@ -77,11 +74,9 @@ def eval_metrics(file_name,folder,ground_threshold,median=None):
   mask = transform(mask)    
   mask = F.interpolate(mask.unsqueeze(0), size=(224), mode='bilinear', align_corners=False)[0]
   mask = torch.where(mask > 0.0, torch.tensor(1),torch.tensor(0))  
-  #DO THIS ONLY FOR THE BRATS21 WHERE THE IMG IS NOT OF 1 CHANNEL
   
 
   
-  #pred_file=f'inference/{folder}/pred/{file_name}.png'
   pred_file=f'inference/{folder}/pred/{file_name}'
   mask_pred = Image.open(pred_file)
   if(median):
@@ -92,15 +87,12 @@ def eval_metrics(file_name,folder,ground_threshold,median=None):
   
     
   
-  #APPLYING THE THRESHOLD ON THE GROUND TRUTH MASKS
   
   if (ground_threshold==0):                   #ZERO THRESHOLD CASE
     if(torch.sum(mask)==ground_threshold):
-      #print('PRINTING PREDICTING MASK SCORE', torch.sum(mask_pred))
       return False
   else:                                       #200, 400 THRESHOLD CASE
     if(torch.sum(mask)<ground_threshold):
-      #print('PRINTING PREDICTING MASK SCORE', torch.sum(mask_pred))
       return False
   
 
