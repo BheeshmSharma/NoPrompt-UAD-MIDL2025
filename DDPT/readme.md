@@ -34,9 +34,9 @@ DATA/
     |
     └── images/
         |
-        ├── <healthy>/
+        ├── <Healthy_Frames>/
         |
-        └── <Unhealthy>/
+        └── <Unhealthy_Frames>/
 ```
 
 Note that the folder name inside of `images/` is also the class name that will be used later down. Inside of these 2 folders upload the images. The splitting into test and train will be done by the system itself.
