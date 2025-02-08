@@ -68,11 +68,12 @@ Follow these steps to prepare the data for processing:
 5. **Check Folder Structure**:
    - Once the extraction is complete, ensure that the final structure of the data follows the suggested folder structure outlined in the `DDPT/readme.md` file for consistency.
 
-
+<!--
 ### Dataset Details
 
 The table below provides information about the dataset details in this project:
 ![Dataset Split Info](/Figures/Data_split_info.png)
+-->
 
 ## Running NoPrompt-UAD
 
