@@ -25,7 +25,7 @@ This code is highly inspired from official [DPT github](https://github.com/fanre
 
 ## Preparing Dataset
 
-* Create a folder DATA, then create a folder for the dataset you want to use (Keep the name as the dataset name). Inside this folder, create a folder 'images' and then upload all the images based on the healthy and unhealthy images.
+* Create a folder DATA, then create a folder for the dataset you want to use (Keep the name as the dataset name). Inside this folder, create a folder `images`and then upload all the images based on the healthy and unhealthy images.
 
 * So the folder structure should look like 
 
@@ -41,20 +41,20 @@ data/
         └── <Tumour>/
 ```
 
-Note that the folder name inside of images/ is also the class name that will be used later down. Inside of these 2 folders upload the images. The splitting into test and train will be done by the system itself.
+Note that the folder name inside of `images/` is also the class name that will be used later down. Inside of these 2 folders upload the images. The splitting into test and train will be done by the system itself.
 
-* Inside the datasets folder, create a .py file for this new dataset, can use reference from caltech101.py. **Make sure to set the class name specifically here**
-* Update the __init__.py inside the datasets folder.
-* In configs folder, create a .yaml file for the new dataset, and mention the configurations for the dataset
+* Inside the datasets folder, create a `.py` file for this new dataset, can use reference from `caltech101.py`. **Make sure to set the class name specifically here**
+* Update the `__init__.py` inside the datasets folder.
+* In configs folder, create a `.yaml` file for the new dataset, and mention the configurations for the dataset
 
 ## Updating run.sh
 
-* Add in the location of the new .yaml file created for the dataset config
-* For all the other parameters you are interested in changing, make the changes in the run.sh file
+* Add in the location of the new `.yaml` file created for the dataset config
+* For all the other parameters you are interested in changing, make the changes in the `run.sh` file
 
-* Install the dependencies in requirements.txt
-* Run 'bash run.sh'
-
+* Run following command
+    ```bash
+    bash run.sh
 
 
 Additional parameters to change in run.sh
