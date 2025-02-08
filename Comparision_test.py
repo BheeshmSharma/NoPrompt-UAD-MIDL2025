@@ -26,7 +26,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DPT_mask_folder_path, MedSAM_mask_folder_path, file_list, image_mode='L', mask_mode='L', target_size=(128, 128)):
+def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DDPT_mask_folder_path, MedSAM_mask_folder_path, file_list, image_mode='L', mask_mode='L', target_size=(128, 128)):
     # Helper function to convert an image to a tensor
     def to_tensor(image):
         return torch.tensor(np.array(image), dtype=torch.float32).unsqueeze(0)  # Add channel dimension
@@ -39,11 +39,11 @@ def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DPT_mask_fol
         return corrected_image
 
     # Helper function to crop and resize the image based on non-zero rows/columns
-    def crop_and_resize(image, mask, MedSAM_mask, DPT_mask, target_size=(128, 128), threshold=64):
+    def crop_and_resize(image, mask, MedSAM_mask, DDPT_mask, target_size=(128, 128), threshold=64):
         image_array = np.array(image)
         mask_array = np.array(mask)
         MedSAM_mask_array = np.array(MedSAM_mask)
-        DPT_mask_array = np.array(DPT_mask)
+        DDPT_mask_array = np.array(DDPT_mask)
         
         # Find non-zero rows and columns
         non_zero_rows = np.any(image_array, axis=1)
@@ -56,7 +56,7 @@ def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DPT_mask_fol
         if len(row_indices) >= threshold and len(col_indices) >= threshold:
             cropped_image = image_array[min(row_indices):max(row_indices), min(col_indices):max(col_indices)]
             cropped_mask = mask_array[min(row_indices):max(row_indices), min(col_indices):max(col_indices)]
-            cropped_DPT_mask = DPT_mask_array[min(row_indices):max(row_indices), min(col_indices):max(col_indices)]
+            cropped_DDPT_mask = DDPT_mask_array[min(row_indices):max(row_indices), min(col_indices):max(col_indices)]
             cropped_MedSAM_mask = MedSAM_mask_array[min(row_indices):max(row_indices), min(col_indices):max(col_indices)]
         else:
             # Crop the central 64x64 area
@@ -64,21 +64,21 @@ def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DPT_mask_fol
             left = 32-((max(col_indices) - min(col_indices)) // 2)
             cropped_image = image_array[min(row_indices)-top:max(row_indices)+top, min(col_indices)-left:max(col_indices)+left]
             cropped_mask = mask_array[min(row_indices)-top:max(row_indices)+top, min(col_indices)-left:max(col_indices)+left]
-            cropped_DPT_mask = DPT_mask_array[min(row_indices)-top:max(row_indices)+top, min(col_indices)-left:max(col_indices)+left]
+            cropped_DDPT_mask = DDPT_mask_array[min(row_indices)-top:max(row_indices)+top, min(col_indices)-left:max(col_indices)+left]
             cropped_MedSAM_mask = MedSAM_mask_array[min(row_indices)-top:max(row_indices)+top, min(col_indices)-left:max(col_indices)+left]
 
         # Convert to PIL image and resize to 128x128
         cropped_image = Image.fromarray(cropped_image).resize(target_size, Image.BILINEAR)
         cropped_mask = Image.fromarray(cropped_mask).resize(target_size, Image.BILINEAR)
-        cropped_DPT_mask = Image.fromarray(cropped_DPT_mask).resize((256,256), Image.BILINEAR)
+        cropped_DDPT_mask = Image.fromarray(cropped_DDPT_mask).resize((256,256), Image.BILINEAR)
         cropped_MedSAM_mask = Image.fromarray(cropped_MedSAM_mask).resize((256,256), Image.BILINEAR)
         
-        return cropped_image, cropped_mask, cropped_MedSAM_mask, cropped_DPT_mask
+        return cropped_image, cropped_mask, cropped_MedSAM_mask, cropped_DDPT_mask
     
     # Initialize lists for valid images and masks
     valid_images = []
     valid_masks = []
-    valid_DPT_masks = []
+    valid_DDPT_masks = []
     valid_MedSAM_masks = []
     
     # Load, resize, and convert masks
@@ -89,12 +89,12 @@ def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DPT_mask_fol
 
         mask = Image.open(os.path.join(mask_folder_path, file)).convert(mask_mode).resize(image.size, Image.BILINEAR)
         MedSAM_mask = Image.open(os.path.join(MedSAM_mask_folder_path, file)).convert(mask_mode).resize((256, 256), Image.BILINEAR)
-        DPT_mask = Image.open(os.path.join(DPT_mask_folder_path, file)).convert(mask_mode).resize((256, 256), Image.BILINEAR) 
+        DDPT_mask = Image.open(os.path.join(DDPT_mask_folder_path, file)).convert(mask_mode).resize((256, 256), Image.BILINEAR) 
 
-        cropped_resized_image, cropped_resized_mask, cropped_MedSAM_mask, cropped_DPT_mask = crop_and_resize(image, mask, MedSAM_mask, DPT_mask, target_size)
+        cropped_resized_image, cropped_resized_mask, cropped_MedSAM_mask, cropped_DDPT_mask = crop_and_resize(image, mask, MedSAM_mask, DDPT_mask, target_size)
         image_tensor = to_tensor(cropped_resized_image)
         mask_tensor = to_tensor(cropped_resized_mask)
-        DPT_mask_tensor = to_tensor(cropped_DPT_mask)        
+        DDPT_mask_tensor = to_tensor(cropped_DDPT_mask)        
         MedSAM_mask_tensor = to_tensor(cropped_MedSAM_mask)
 
         if mask_tensor.dim() == 2:
@@ -103,20 +103,20 @@ def load_and_convert_to_tensor(image_folder_path, mask_folder_path, DPT_mask_fol
         # Add valid image and mask to the lists
         valid_images.append(image_tensor)  # Add the processed image tensor
         valid_masks.append(mask_tensor)  # Add the mask tensor
-        valid_DPT_masks.append(DPT_mask_tensor)  # Add the mask tensor        
+        valid_DDPT_masks.append(DDPT_mask_tensor)  # Add the mask tensor        
         valid_MedSAM_masks.append(MedSAM_mask_tensor)  # Add the mask tensor        
 
     # Convert the list of valid images and masks into batches
     batch_images = torch.stack(valid_images) if valid_images else torch.empty(0)
     batch_masks = torch.stack(valid_masks) if valid_masks else torch.empty(0)
-    batch_DPT_masks = torch.stack(valid_DPT_masks) if valid_DPT_masks else torch.empty(0)
+    batch_DDPT_masks = torch.stack(valid_DDPT_masks) if valid_DDPT_masks else torch.empty(0)
     batch_MedSAM_masks = torch.stack(valid_MedSAM_masks) if valid_MedSAM_masks else torch.empty(0)
 
     batch_masks = torch.where(batch_masks > 127.5, 1.0, 0.0)
-    batch_DPT_masks = torch.where(batch_DPT_masks > 127.5, 1.0, 0.0)
+    batch_DDPT_masks = torch.where(batch_DDPT_masks > 127.5, 1.0, 0.0)
     batch_MedSAM_masks = torch.where(batch_MedSAM_masks > 127.5, 1.0, 0.0)
     
-    return batch_images, batch_masks, batch_DPT_masks, batch_MedSAM_masks
+    return batch_images, batch_masks, batch_DDPT_masks, batch_MedSAM_masks
 
 def compute_metrics_per_sample(preds, targets, epsilon=1e-7):
     """
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     Save_path = "./Experiments/" + str(args.dataset_name) + '_' + str(args.folder_name) + "/"
     
     tumor_image_folder_path =  './DATA/' + dataset +'/Frames/'
-    dpt_mask_folder_path = './DATA/DPT_inference/' + dataset + '/'
+    ddpt_mask_folder_path = './DATA/DDPT_inference/' + dataset + '/'
     MedSAM_mask_folder_path = './DATA/MedSAM_inference/' + dataset + '/'
     mask_folder_path = './DATA/' + dataset + '/GT_Mask/'
     
@@ -305,14 +305,14 @@ if __name__ == "__main__":
     WithTrueMask_Jaccard_Score = 0.0
     WithTrueMask_FP_rate_Score = 0.0
     
-    WithDPTMask_Decoder_Dice_Score = 0.0
-    WithDPTMask_AUROC_Score = 0.0
-    WithDPTMask_AUPRC_Score = 0.0
-    WithDPTMask_Precision_Score = 0.0
-    WithDPTMask_Rcall_Score = 0.0
-    WithDPTMask_Specificity_Score = 0.0
-    WithDPTMask_Jaccard_Score = 0.0
-    WithDPTMask_FP_rate_Score = 0.0
+    WithDDPTMask_Decoder_Dice_Score = 0.0
+    WithDDPTMask_AUROC_Score = 0.0
+    WithDDPTMask_AUPRC_Score = 0.0
+    WithDDPTMask_Precision_Score = 0.0
+    WithDDPTMask_Rcall_Score = 0.0
+    WithDDPTMask_Specificity_Score = 0.0
+    WithDDPTMask_Jaccard_Score = 0.0
+    WithDDPTMask_FP_rate_Score = 0.0
     
     WithMedSAMMask_Decoder_Dice_Score = 0.0
     WithMedSAMMask_AUROC_Score = 0.0
@@ -328,15 +328,15 @@ if __name__ == "__main__":
     with torch.no_grad():
         for tumor_batch in tqdm(create_batches(tumor_val_files, args.batch_size), total=len(tumor_val_files) // args.batch_size):
             # Batch processing
-            tumor_images, target_masks, DPT_Mask, MedSAM_Prediction_Mask = load_and_convert_to_tensor(tumor_image_folder_path, mask_folder_path, dpt_mask_folder_path, MedSAM_mask_folder_path, tumor_batch)
-            tumor_images, target_masks, DPT_Mask, MedSAM_Prediction_Mask = tumor_images.to(device), target_masks.to(device), DPT_Mask.to(device), MedSAM_Prediction_Mask.to(device)
+            tumor_images, target_masks, DDPT_Mask, MedSAM_Prediction_Mask = load_and_convert_to_tensor(tumor_image_folder_path, mask_folder_path, ddpt_mask_folder_path, MedSAM_mask_folder_path, tumor_batch)
+            tumor_images, target_masks, DDPT_Mask, MedSAM_Prediction_Mask = tumor_images.to(device), target_masks.to(device), DDPT_Mask.to(device), MedSAM_Prediction_Mask.to(device)
             bs = tumor_images.shape[0]
             Candidate_Prompt_Embedding_batch = Candidate_Prompt_Embedding.repeat(bs, 1, 1)
 
             if target_masks.dim() == 1:
                 continue
             
-            # Create mask for the points which are inside the bounding box using DPT Mask
+            # Create mask for the points which are inside the bounding box using DDPT Mask
             box_point_mask = BCM.create_masks(target_masks).to(device).float()
             box_point_mask = box_point_mask.view(bs, -1)
                         
@@ -352,24 +352,24 @@ if __name__ == "__main__":
             point_sparse_embedding_activations = candidate_spatial_embedding_activations.squeeze(2)
             
             # Loss Computation
-            Segmentation_loss = combined_weighted_compute_average_ELT_loss(predicted_mask, MedSAM_Prediction_Mask, DPT_Mask)
+            Segmentation_loss = combined_weighted_compute_average_ELT_loss(predicted_mask, MedSAM_Prediction_Mask, DDPT_Mask)
             Point_Activation_loss = compute_average_ELdice_loss(candidate_spatial_embedding_activations, box_point_mask)
                 
             Attention_Dice_Score_sum = compute_average_dice(candidate_spatial_embedding_activations, box_point_mask) * bs
             resized_target_mask_256 = F.interpolate(target_masks, size=(256, 256), mode='bilinear', align_corners=False)
-            resized_DPT_256 = F.interpolate(DPT_Mask, size=(256, 256), mode='bilinear', align_corners=False)
+            resized_DDPT_256 = F.interpolate(DDPT_Mask, size=(256, 256), mode='bilinear', align_corners=False)
             resized_target_mask_256 = torch.where(resized_target_mask_256 > 0.0, 1.0, 0.0)
-            resized_DPT_256 = torch.where(resized_DPT_256 > 0.0, 1.0, 0.0)
+            resized_DDPT_256 = torch.where(resized_DDPT_256 > 0.0, 1.0, 0.0)
             MedSAM_Prediction_Mask = torch.where(MedSAM_Prediction_Mask > 0.0, 1.0, 0.0)
             
             
             WithMedSAMMask_Decoder_Dice_sum = compute_average_dice(MedSAM_Prediction_Mask, resized_target_mask_256) * bs
-            WithDPTMask_Decoder_Dice_sum = compute_average_dice(resized_DPT_256, resized_target_mask_256) * bs
+            WithDDPTMask_Decoder_Dice_sum = compute_average_dice(resized_DDPT_256, resized_target_mask_256) * bs
             WithTrueMask_Decoder_Dice_sum = compute_average_dice(predicted_mask, resized_target_mask_256) * bs
             
             True_avg_metrics = compute_average_metrics(predicted_mask, resized_target_mask_256)
             MedSAM_avg_metrics = compute_average_metrics(MedSAM_Prediction_Mask, resized_target_mask_256)
-            DPT_avg_metrics = compute_average_metrics(resized_DPT_256, resized_target_mask_256)
+            DDPT_avg_metrics = compute_average_metrics(resized_DDPT_256, resized_target_mask_256)
 
             True_SUM_auroc = True_avg_metrics["auroc"] * bs
             True_SUM_auprc = True_avg_metrics["auprc"] * bs
@@ -387,13 +387,13 @@ if __name__ == "__main__":
             MedSAM_SUM_jaccard = MedSAM_avg_metrics["jaccard"] * bs
             MedSAM_SUM_FP_rate = MedSAM_avg_metrics["FP_rate"] * bs
 
-            DPT_SUM_auroc = DPT_avg_metrics["auroc"] * bs
-            DPT_SUM_auprc = DPT_avg_metrics["auprc"] * bs
-            DPT_SUM_precision= DPT_avg_metrics["precision"] * bs
-            DPT_SUM_recall = DPT_avg_metrics["recall"] * bs
-            DPT_SUM_specificity = DPT_avg_metrics["specificity"] * bs
-            DPT_SUM_jaccard = DPT_avg_metrics["jaccard"] * bs
-            DPT_SUM_FP_rate = DPT_avg_metrics["FP_rate"] * bs
+            DDPT_SUM_auroc = DDPT_avg_metrics["auroc"] * bs
+            DDPT_SUM_auprc = DDPT_avg_metrics["auprc"] * bs
+            DDPT_SUM_precision= DDPT_avg_metrics["precision"] * bs
+            DDPT_SUM_recall = DDPT_avg_metrics["recall"] * bs
+            DDPT_SUM_specificity = DDPT_avg_metrics["specificity"] * bs
+            DDPT_SUM_jaccard = DDPT_avg_metrics["jaccard"] * bs
+            DDPT_SUM_FP_rate = DDPT_avg_metrics["FP_rate"] * bs
             
             num_sample_val_epoch += bs
 
@@ -402,7 +402,7 @@ if __name__ == "__main__":
             Attention_Dice_Score += Attention_Dice_Score_sum.item()
 
             WithMedSAMMask_Decoder_Dice_Score += WithMedSAMMask_Decoder_Dice_sum.item()
-            WithDPTMask_Decoder_Dice_Score += WithDPTMask_Decoder_Dice_sum.item()
+            WithDDPTMask_Decoder_Dice_Score += WithDDPTMask_Decoder_Dice_sum.item()
             WithTrueMask_Decoder_Dice_Score += WithTrueMask_Decoder_Dice_sum.item()
             
             WithTrueMask_AUROC_Score += True_SUM_auroc.item()
@@ -413,13 +413,13 @@ if __name__ == "__main__":
             WithTrueMask_Jaccard_Score += True_SUM_jaccard.item()
             WithTrueMask_FP_rate_Score += True_SUM_FP_rate.item()
 
-            WithDPTMask_AUROC_Score += DPT_SUM_auroc.item()
-            WithDPTMask_AUPRC_Score += DPT_SUM_auprc.item()
-            WithDPTMask_Precision_Score += DPT_SUM_precision.item()
-            WithDPTMask_Rcall_Score += DPT_SUM_recall.item()
-            WithDPTMask_Specificity_Score += DPT_SUM_specificity.item()
-            WithDPTMask_Jaccard_Score += DPT_SUM_jaccard.item()
-            WithDPTMask_FP_rate_Score += DPT_SUM_FP_rate.item()
+            WithDDPTMask_AUROC_Score += DDPT_SUM_auroc.item()
+            WithDDPTMask_AUPRC_Score += DDPT_SUM_auprc.item()
+            WithDDPTMask_Precision_Score += DDPT_SUM_precision.item()
+            WithDDPTMask_Rcall_Score += DDPT_SUM_recall.item()
+            WithDDPTMask_Specificity_Score += DDPT_SUM_specificity.item()
+            WithDDPTMask_Jaccard_Score += DDPT_SUM_jaccard.item()
+            WithDDPTMask_FP_rate_Score += DDPT_SUM_FP_rate.item()
 
             WithMedSAMMask_AUROC_Score += MedSAM_SUM_auroc.item()
             WithMedSAMMask_AUPRC_Score += MedSAM_SUM_auprc.item()
@@ -442,14 +442,14 @@ mean_WithTrueMask_Specificity_Score = WithTrueMask_Specificity_Score / num_sampl
 mean_WithTrueMask_Jaccard_Score = WithTrueMask_Jaccard_Score / num_sample_val_epoch
 mean_WithTrueMask_FP_rate_Score = WithTrueMask_FP_rate_Score / num_sample_val_epoch
 
-mean_WithDPTMask_Decoder_Dice_Score = WithDPTMask_Decoder_Dice_Score / num_sample_val_epoch
-mean_WithDPTMask_AUROC_Score = WithDPTMask_AUROC_Score / num_sample_val_epoch
-mean_WithDPTMask_AUPRC_Score = WithDPTMask_AUPRC_Score / num_sample_val_epoch
-mean_WithDPTMask_Precision_Score = WithDPTMask_Precision_Score / num_sample_val_epoch
-mean_WithDPTMask_Recall_Score = WithDPTMask_Rcall_Score / num_sample_val_epoch
-mean_WithDPTMask_Specificity_Score = WithDPTMask_Specificity_Score / num_sample_val_epoch
-mean_WithDPTMask_Jaccard_Score = WithDPTMask_Jaccard_Score / num_sample_val_epoch
-mean_WithDPTMask_FP_rate_Score = WithDPTMask_FP_rate_Score / num_sample_val_epoch
+mean_WithDDPTMask_Decoder_Dice_Score = WithDDPTMask_Decoder_Dice_Score / num_sample_val_epoch
+mean_WithDDPTMask_AUROC_Score = WithDDPTMask_AUROC_Score / num_sample_val_epoch
+mean_WithDDPTMask_AUPRC_Score = WithDDPTMask_AUPRC_Score / num_sample_val_epoch
+mean_WithDDPTMask_Precision_Score = WithDDPTMask_Precision_Score / num_sample_val_epoch
+mean_WithDDPTMask_Recall_Score = WithDDPTMask_Rcall_Score / num_sample_val_epoch
+mean_WithDDPTMask_Specificity_Score = WithDDPTMask_Specificity_Score / num_sample_val_epoch
+mean_WithDDPTMask_Jaccard_Score = WithDDPTMask_Jaccard_Score / num_sample_val_epoch
+mean_WithDDPTMask_FP_rate_Score = WithDDPTMask_FP_rate_Score / num_sample_val_epoch
 
 mean_WithMedSAMMask_Decoder_Dice_Score = WithMedSAMMask_Decoder_Dice_Score / num_sample_val_epoch
 mean_WithMedSAMMask_AUROC_Score = WithMedSAMMask_AUROC_Score / num_sample_val_epoch
@@ -464,11 +464,11 @@ mean_WithMedSAMMask_FP_rate_Score = WithMedSAMMask_FP_rate_Score / num_sample_va
 
 print(f":::::::::::::::::::::::::Folder Name {args.folder_name}:::::::::::::::::::::::::::::::")
 print(f"{'Metric':<40} {'True Mask':<20} {'MedSAM Mask':<20} {'DPT Mask':<20}")
-print(f"{'Decoder Dice Score':<40} {mean_WithTrueMask_Decoder_Dice_Score:<20} {mean_WithMedSAMMask_Decoder_Dice_Score:<20} {mean_WithDPTMask_Decoder_Dice_Score:<20}")
-print(f"{'AUROC Score':<40} {mean_WithTrueMask_AUROC_Score:<20} {mean_WithMedSAMMask_AUROC_Score:<20} {mean_WithDPTMask_AUROC_Score:<20}")
-print(f"{'AUPRC Score':<40} {mean_WithTrueMask_AUPRC_Score:<20} {mean_WithMedSAMMask_AUPRC_Score:<20} {mean_WithDPTMask_AUPRC_Score:<20}")
-print(f"{'Precision Score':<40} {mean_WithTrueMask_Precision_Score:<20} {mean_WithMedSAMMask_Precision_Score:<20} {mean_WithDPTMask_Precision_Score:<20}")
-print(f"{'Recall Score':<40} {mean_WithTrueMask_Recall_Score:<20} {mean_WithMedSAMMask_Recall_Score:<20} {mean_WithDPTMask_Recall_Score:<20}")
-print(f"{'Specificity Score':<40} {mean_WithTrueMask_Specificity_Score:<20} {mean_WithMedSAMMask_Specificity_Score:<20} {mean_WithDPTMask_Specificity_Score:<20}")
-print(f"{'Jaccard Score':<40} {mean_WithTrueMask_Jaccard_Score:<20} {mean_WithMedSAMMask_Jaccard_Score:<20} {mean_WithDPTMask_Jaccard_Score:<20}")
-print(f"{'FP Rate Score':<40} {mean_WithTrueMask_FP_rate_Score:<20} {mean_WithMedSAMMask_FP_rate_Score:<20} {mean_WithDPTMask_FP_rate_Score:<20}")
+print(f"{'Decoder Dice Score':<40} {mean_WithTrueMask_Decoder_Dice_Score:<20} {mean_WithMedSAMMask_Decoder_Dice_Score:<20} {mean_WithDDPTMask_Decoder_Dice_Score:<20}")
+print(f"{'AUROC Score':<40} {mean_WithTrueMask_AUROC_Score:<20} {mean_WithMedSAMMask_AUROC_Score:<20} {mean_WithDDPTMask_AUROC_Score:<20}")
+print(f"{'AUPRC Score':<40} {mean_WithTrueMask_AUPRC_Score:<20} {mean_WithMedSAMMask_AUPRC_Score:<20} {mean_WithDDPTMask_AUPRC_Score:<20}")
+print(f"{'Precision Score':<40} {mean_WithTrueMask_Precision_Score:<20} {mean_WithMedSAMMask_Precision_Score:<20} {mean_WithDDPTMask_Precision_Score:<20}")
+print(f"{'Recall Score':<40} {mean_WithTrueMask_Recall_Score:<20} {mean_WithMedSAMMask_Recall_Score:<20} {mean_WithDDPTMask_Recall_Score:<20}")
+print(f"{'Specificity Score':<40} {mean_WithTrueMask_Specificity_Score:<20} {mean_WithMedSAMMask_Specificity_Score:<20} {mean_WithDDPTMask_Specificity_Score:<20}")
+print(f"{'Jaccard Score':<40} {mean_WithTrueMask_Jaccard_Score:<20} {mean_WithMedSAMMask_Jaccard_Score:<20} {mean_WithDDPTMask_Jaccard_Score:<20}")
+print(f"{'FP Rate Score':<40} {mean_WithTrueMask_FP_rate_Score:<20} {mean_WithMedSAMMask_FP_rate_Score:<20} {mean_WithDDPTMask_FP_rate_Score:<20}")

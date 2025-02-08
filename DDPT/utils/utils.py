@@ -9,7 +9,7 @@ from PIL import Image
 import numpy as np
 import cv2
 
-## CREATING FOLDERS IN CREATE_MAPS DPT.py
+## CREATING FOLDERS IN CREATE_MAPS 
 
 def create_directory(path):
     """
@@ -43,7 +43,7 @@ def setup_folders(base_path):
     return folder_paths
 
 
-## BETTER METRIC CALCULATION IN generate_metric DPT.py
+## BETTER METRIC CALCULATION IN generate_metric 
 
 import json
 from tqdm import tqdm

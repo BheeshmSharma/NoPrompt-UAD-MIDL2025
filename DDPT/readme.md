@@ -1,4 +1,4 @@
-# Weakly Supervised Brain Anamoly Segmentation
+# Weakly Supervised Brain Anamoly Segmentation (Discriminative Dual Prompt Tuning)
 
 <!--
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)

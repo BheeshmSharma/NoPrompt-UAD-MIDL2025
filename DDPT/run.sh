@@ -18,7 +18,7 @@ MEDIAN=True
 # C is our general knowledge guidence epoch.
 # ALPHA is loss balancing parameter.
 
-python DPT-model.py --root ./DATA/${DATADIR}  --seed $j --evaluate $EVAL --classify $CLASSIFY --train-craft $TRAIN_CRAFT --eval-craft $EVAL_CRAFT \
+python DDPT-model.py --root ./DATA/${DATADIR}  --seed $j --evaluate $EVAL --classify $CLASSIFY --train-craft $TRAIN_CRAFT --eval-craft $EVAL_CRAFT \
 --trainer $MODEL \
 --epochs $EPOCHS \
 --threshold $THRESHOLD \

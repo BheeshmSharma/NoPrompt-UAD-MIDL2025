@@ -121,7 +121,7 @@ def compute_weight_map(mask, sigma=10):
 
 
 # Compute Weighted EL-Dice Loss
-def combined_weighted_compute_average_ELdice_loss(preds, target_masks_MedSAM, target_masks_DPT, delta=0.5):
+def combined_weighted_compute_average_ELdice_loss(preds, target_masks_MedSAM, target_masks_DDPT, delta=0.5):
     batch_size = preds.size(0)
     total_loss = 0.0
     sigma=10
@@ -133,38 +133,38 @@ def combined_weighted_compute_average_ELdice_loss(preds, target_masks_MedSAM, ta
         weight_map_MedSAM = compute_weight_map(target_masks_SAM[i:i+1], sigma=sigma).squeeze()
         weight_map_MedSAM = weight_map_MedSAM.detach().unsqueeze(0)
 
-        weight_map_DPT = compute_weight_map(target_masks_DPT[i:i+1], sigma=sigma).squeeze()
-        weight_map_DPT = weight_map_DPT.detach().unsqueeze(0)
+        weight_map_DDPT = compute_weight_map(target_masks_DDPT[i:i+1], sigma=sigma).squeeze()
+        weight_map_DDPT = weight_map_DDPT.detach().unsqueeze(0)
         
-        weight_map_DPT_FP = compute_weight_map(1 - target_masks_DPT[i:i+1], sigma=15).squeeze()
-        weight_map_DPT_FP = weight_map_DPT_FP.detach().unsqueeze(0)
+        weight_map_DDPT_FP = compute_weight_map(1 - target_masks_DDPT[i:i+1], sigma=15).squeeze()
+        weight_map_DDPT_FP = weight_map_DDPT_FP.detach().unsqueeze(0)
 
         # Compute Dice coefficient
         dice_MedSAM = dice_coefficient(preds[i], target_masks_MedSAM[i]*(1.0 - weight_map_MedSAM))
         el_dice_MedSAM = torch.clamp(torch.pow(-torch.log(dice_MedSAM), 0.3), 0, 2)
 
-        dice_DPT = dice_coefficient(preds[i], target_masks_DPT[i]*weight_map_DPT)
-        el_dice_DPT = torch.clamp(torch.pow(-torch.log(dice_DPT), 0.3), 0, 2)
+        dice_DDPT = dice_coefficient(preds[i], target_masks_DDPT[i]*weight_map_DDPT)
+        el_dice_DDPT = torch.clamp(torch.pow(-torch.log(dice_DDPT), 0.3), 0, 2)
 
-        dice_DPT_FP = dice_coefficient((1 - preds[i]) * (1 - target_masks_DPT[i]), (1 - target_masks_DPT[i]) * weight_map_DPT_FP)
-        el_dice_DPT_FP = torch.clamp(torch.pow(-torch.log(dice_DPT_FP), 0.3), 0, 2)
+        dice_DDPT_FP = dice_coefficient((1 - preds[i]) * (1 - target_masks_DDPT[i]), (1 - target_masks_DDPT[i]) * weight_map_DDPT_FP)
+        el_dice_DDPT_FP = torch.clamp(torch.pow(-torch.log(dice_DDPT_FP), 0.3), 0, 2)
 
-        D_factor = dice_coefficient(target_masks_MedSAM[i], target_masks_DPT[i])
+        D_factor = dice_coefficient(target_masks_MedSAM[i], target_masks_DDPT[i])
         
         # Compute false positives
-        fp_DPT = preds[i] * (1 - target_masks_DPT[i])
-        fp_penalty_DPT = fp_DPT.sum() / (target_masks_DPT[i].numel())
+        fp_DDPT = preds[i] * (1 - target_masks_DDPT[i])
+        fp_penalty_DDPT = fp_DDPT.sum() / (target_masks_DDPT[i].numel())
 
         if math.isnan(el_dice_MedSAM):
-            total_loss = total_loss + el_dice_DPT + 0.6 * el_dice_DPT_FP + 0.2 * fp_penalty_DPT
+            total_loss = total_loss + el_dice_DDPT + 0.6 * el_dice_DDPT_FP + 0.2 * fp_penalty_DDPT
         else:
-            total_loss = total_loss + (D_factor * el_dice_MedSAM) + el_dice_DPT + 0.6 * el_dice_DPT_FP  + 0.6 * fp_penalty_DPT 
+            total_loss = total_loss + (D_factor * el_dice_MedSAM) + el_dice_DDPT + 0.6 * el_dice_DDPT_FP  + 0.6 * fp_penalty_DDPT 
     
     avg_loss = total_loss / batch_size
     return avg_loss
 
 # Compute Weighted EL-Tversky Loss
-def combined_weighted_compute_average_ELT_loss(preds, target_masks_MedSAM, target_masks_DPT, delta=0.5):
+def combined_weighted_compute_average_ELT_loss(preds, target_masks_MedSAM, target_masks_DDPT, delta=0.5):
     batch_size = preds.size(0)
     total_loss = 0.0
     sigma=10
@@ -175,32 +175,32 @@ def combined_weighted_compute_average_ELT_loss(preds, target_masks_MedSAM, targe
         weight_map_MedSAM = compute_weight_map(target_masks_MedSAM[i:i+1], sigma=sigma).squeeze()
         weight_map_MedSAM = weight_map_MedSAM.detach().unsqueeze(0)
 
-        weight_map_DPT = compute_weight_map(target_masks_DPT[i:i+1], sigma=sigma).squeeze()
-        weight_map_DPT = weight_map_DPT.detach().unsqueeze(0)
+        weight_map_DDPT = compute_weight_map(target_masks_DDPT[i:i+1], sigma=sigma).squeeze()
+        weight_map_DDPT = weight_map_DDPT.detach().unsqueeze(0)
 
-        weight_map_DPT_FP = compute_weight_map(1 - target_masks_DPT[i:i+1], sigma=15).squeeze()
-        weight_map_DPT_FP = weight_map_DPT_FP.detach().unsqueeze(0)
+        weight_map_DDPT_FP = compute_weight_map(1 - target_masks_DDPT[i:i+1], sigma=15).squeeze()
+        weight_map_DDPT_FP = weight_map_DDPT_FP.detach().unsqueeze(0)
 
         # Compute Dice coefficient
         dice_MedSAM = calculate_tversky_index(preds[i], target_masks_MedSAM[i] * (1.0 - weight_map_MedSAM), 0.3)
         el_dice_MedSAM = torch.clamp(torch.pow(-torch.log(dice_MedSAM), 0.3), 0, 2)
 
-        dice_DPT = calculate_tversky_index(preds[i], target_masks_DPT[i] * weight_map_DPT, 0.3)
-        el_dice_DPT = torch.clamp(torch.pow(-torch.log(dice_DPT), 0.3), 0, 2)
+        dice_DDPT = calculate_tversky_index(preds[i], target_masks_DDPT[i] * weight_map_DDPT, 0.3)
+        el_dice_DDPT = torch.clamp(torch.pow(-torch.log(dice_DDPT), 0.3), 0, 2)
 
-        dice_DPT_FP = dice_coefficient((1 - preds[i]) * (1 - target_masks_DPT[i]), (1 - target_masks_DPT[i]) * weight_map_DPT_FP)
-        el_dice_DPT_FP = torch.clamp(torch.pow(-torch.log(dice_DPT_FP), 0.3), 0, 2)
+        dice_DDPT_FP = dice_coefficient((1 - preds[i]) * (1 - target_masks_DDPT[i]), (1 - target_masks_DDPT[i]) * weight_map_DDPT_FP)
+        el_dice_DDPT_FP = torch.clamp(torch.pow(-torch.log(dice_DDPT_FP), 0.3), 0, 2)
 
-        D_factor = dice_coefficient(target_masks_MedSAM[i], target_masks_DPT[i])
+        D_factor = dice_coefficient(target_masks_MedSAM[i], target_masks_DDPT[i])
 
         # Compute false positives
-        fp_DPT = preds[i] * (1 - target_masks_DPT[i])  # Pixels predicted as positive but are negative
-        fp_penalty_DPT = fp_DPT.sum() / (target_masks_DPT[i].numel())  # Normalize by total pixels
+        fp_DDPT = preds[i] * (1 - target_masks_DDPT[i])  # Pixels predicted as positive but are negative
+        fp_penalty_DDPT = fp_DDPT.sum() / (target_masks_DDPT[i].numel())  # Normalize by total pixels
         
         if math.isnan(el_dice_MedSAM):
-            total_loss = total_loss + el_dice_DPT + 0.6 * el_dice_DPT_FP + 0.6 * fp_penalty_DPT
+            total_loss = total_loss + el_dice_DDPT + 0.6 * el_dice_DDPT_FP + 0.6 * fp_penalty_DDPT
         else:
-            total_loss = total_loss + el_dice_DPT + 0.6 * el_dice_DPT_FP + 0.6 * fp_penalty_DPT + (D_factor * el_dice_MedSAM)
+            total_loss = total_loss + el_dice_DDPT + 0.6 * el_dice_DDPT_FP + 0.6 * fp_penalty_DDPT + (D_factor * el_dice_MedSAM)
     
     avg_loss = total_loss / batch_size
 

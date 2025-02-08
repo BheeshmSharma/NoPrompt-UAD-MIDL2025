@@ -66,9 +66,9 @@ Follow these steps to prepare the data for processing:
    - After adjusting the paths, run the `Data_Extraction.py` script to process the data.
 
 5. **Check Folder Structure**:
-   - Once the extraction is complete, make sure the extracted data is saved in the suggested folder structure outlined in the `DPT/readme.md`.
+   - Once the extraction is complete, make sure the extracted data is saved in the suggested folder structure outlined in the `DDPT/readme.md`.
 
-   > **Note**: Ensure that the final structure of the data follows the guidelines provided in the `DPT/readme.md` file for consistency.
+   > **Note**: Ensure that the final structure of the data follows the guidelines provided in the `DDPT/readme.md` file for consistency.
 
 
 ### Dataset Details

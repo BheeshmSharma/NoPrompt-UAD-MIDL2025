@@ -66,7 +66,7 @@ if __name__ == "__main__":
     Save_path = "./Experiments/" + str(args.dataset_name) + '_' + str(args.folder_name) + "/"
     
     tumor_image_folder_path =  './DATA/' + args.dataset_name +'/Frames/'
-    dpt_mask_folder_path = './DATA/DPT_inference/' + args.dataset_name + '/'
+    ddpt_mask_folder_path = './DATA/DDPT_inference/' + args.dataset_name + '/'
     MedSAM_mask_folder_path = './DATA/MedSAM_inference/' + args.dataset_name + '/'
     mask_folder_path = './DATA/' + args.dataset_name + '/GT_Mask/'
     
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
             # Process in batches
             for tumor_batch in tqdm(create_batches(tumor_train_files, args.batch_size), total=len(tumor_train_files) // args.batch_size):
-                tumor_images, target_masks, MedSAM_Prediction_Mask, target_masks_256, MedSAM_Prediction_Mask_256 = load_and_convert_to_tensor(tumor_image_folder_path, dpt_mask_folder_path, MedSAM_mask_folder_path, tumor_batch)
+                tumor_images, target_masks, MedSAM_Prediction_Mask, target_masks_256, MedSAM_Prediction_Mask_256 = load_and_convert_to_tensor(tumor_image_folder_path, ddpt_mask_folder_path, MedSAM_mask_folder_path, tumor_batch)
                 tumor_images, target_masks, MedSAM_Prediction_Mask, target_masks_256, MedSAM_Prediction_Mask_256 = tumor_images.to(device), target_masks.to(device), MedSAM_Prediction_Mask.to(device), target_masks_256.to(device), MedSAM_Prediction_Mask_256.to(device)
                 bs = tumor_images.shape[0]
                 Candidate_Prompt_Embedding_batch = Candidate_Prompt_Embedding.repeat(bs, 1, 1)
@@ -169,7 +169,7 @@ if __name__ == "__main__":
                 optimizer.zero_grad()
                 start_time = time.time()
 
-                # Create mask for the points which are inside the bounding box using DPT Mask
+                # Create mask for the points which are inside the bounding box using DDPT Mask
                 box_point_mask = BCM.create_masks(target_masks).to(device).float()
                 box_point_mask = box_point_mask.view(bs, -1)
                 
@@ -231,7 +231,7 @@ if __name__ == "__main__":
                     if target_masks.dim() == 1:
                         continue
                     
-                    # Create mask for the points which are inside the bounding box using DPT Mask
+                    # Create mask for the points which are inside the bounding box using DDPT Mask
                     box_point_mask = BCM.create_masks(target_masks).to(device).float()
                     box_point_mask = box_point_mask.view(bs, -1)
     
@@ -285,7 +285,7 @@ if __name__ == "__main__":
                     if target_masks.dim() == 1:
                         continue
                     
-                    # Create mask for the points which are inside the bounding box using DPT Mask
+                    # Create mask for the points which are inside the bounding box using DDPT Mask
                     box_point_mask = BCM.create_masks(target_masks).to(device).float()
                     box_point_mask = box_point_mask.view(bs, -1)
                         

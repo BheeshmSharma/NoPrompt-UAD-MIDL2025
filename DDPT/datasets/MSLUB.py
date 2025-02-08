@@ -17,16 +17,15 @@ NEW_CNAMES = {
 
 
 @DATASET_REGISTRY.register()
-class ATLAS(DatasetBase):
+class MSLUB(DatasetBase):
 
-    dataset_dir = "ATLAS"
+    dataset_dir = "MSLUB"
 
     def __init__(self, cfg):
         
         
-        #cfg -> basically like that whole CN object itself
+      
         root = os.path.abspath(os.path.expanduser(cfg.DATASET.ROOT))
-        #root -> C:\Users\karth\OneDrive\Desktop\CODES\ML\PROFF\MEDICAL_IMAGE_SEGMENTATION\DPT\DATA\caltech-101
         self.dataset_dir = os.path.join(root, self.dataset_dir)
 
         #now just append a lil to each one of these

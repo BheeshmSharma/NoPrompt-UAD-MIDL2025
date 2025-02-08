@@ -25,9 +25,9 @@ class BraTS23(DatasetBase):
         
         
         root = os.path.abspath(os.path.expanduser(cfg.DATASET.ROOT))
-        #root -> /home/bheeshmsharma/Karthikeyan/DPT/DATA
+    
         self.dataset_dir = os.path.join(root, self.dataset_dir)
-        #self.dataset_dir  -> /home/bheeshmsharma/Karthikeyan/DPT/DATA/BraTS23
+       
 
         self.image_dir = os.path.join(self.dataset_dir, "images")
         
