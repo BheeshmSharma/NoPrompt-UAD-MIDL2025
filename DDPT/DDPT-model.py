@@ -183,12 +183,6 @@ def main(args):
 
     if torch.cuda.is_available() and cfg.USE_CUDA:
       torch.backends.cudnn.benchmark = True
-
-
-    trainer=build_trainer(cfg)
-    trainer.load_model(cfg.OUTPUT_DIR,epoch=cfg.OPTIM.MAX_EPOCH)  
-    trainer.create_maps("map_location")
-
     
 
     if cfg.EVAL.RUN:
