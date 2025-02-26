@@ -116,6 +116,16 @@ The following table outlines the patient-wise dataset split used in this work:
      ```bash
      python test_run.py
      ```
+
+## Pre-Trained Model List
+
+| Dataset Name | Download Link |
+|--------------|---------------|
+| BraTS20 | [Link](https://www.dropbox.com/scl/fo/jccr7bo00ku9vphtx8eed/AI7rF3OwhWJLPe-_7JXmubs?rlkey=vb2ssdcndim6adozak2h86z0s&st=xxo6g8mb&dl=0)     |
+| BraTS21 | [Link](https://www.dropbox.com/scl/fo/p8nmih7e2mp81lycmno3h/AHNQ8RH7dQ2WNHfGKrsPuDc?rlkey=l4zkj25ojsuu4eiqrm8e62hpq&st=0u4t42if&dl=0)     |
+| BraTS23 | [Link](https://www.dropbox.com/scl/fo/ikjnlzim6299kaguoo9up/AEH6MdUvjMLg05Bp7sxmv5A?rlkey=fful2mdlw4ozi3toav2ra9kqg&st=0ml66zjn&dl=0)     |
+| MSD | [Link](https://www.dropbox.com/scl/fo/w0fmdx33cejdud04ki2p8/AKIqFkinNubudllMCzerhV8?rlkey=qm1a9agwt6c9m0a6t2bnez233&st=t445fz9z&dl=0)     |
+
 <!--
 ### Qualitative results:
 We present below a few comparisons in terms of qualitative and quantitative results.
