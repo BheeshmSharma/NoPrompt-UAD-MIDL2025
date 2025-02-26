@@ -72,7 +72,10 @@ Follow these steps to prepare the data for processing:
 
 The following table outlines the patient-wise dataset split used in this work:
 
-![Dataset Split Info](/Figures/Data_split_info.png)
+<p align="center">
+  <img src="/Figures/Data_split_info.png" width="400"/>
+</p>
+
 
 ## Running NoPrompt-UAD
 
