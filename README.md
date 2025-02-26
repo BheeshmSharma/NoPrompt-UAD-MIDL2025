@@ -117,7 +117,7 @@ The following table outlines the patient-wise dataset split used in this work:
      python test_run.py
      ```
 
-## Pre-Trained Model List
+## Pre-Trained Model Weights List
 
 | Dataset Name | Download Link |
 |--------------|---------------|
